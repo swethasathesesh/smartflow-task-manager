@@ -77,7 +77,7 @@ Create a `.env` file in the project root:
 ```text
 # Application Settings
 APP_NAME=User Task Management
-API DEBUG=True
+APIDEBUG=True
 SECRET_KEY=your-super-secret-key
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
@@ -90,12 +90,12 @@ DATABASE_NAME=task_management
 # Email Service (Amazon SES)
 EMAIL_HOST=email-smtp.us-east-1.amazonaws.com
 EMAIL_PORT=587
-EMAIL_USERNAME=your-ses-smtp-username 
-EMAIL_PASSWORD=your-ses-smtp-password 
+EMAIL_USERNAME=your-ses-smtp-username
+EMAIL_PASSWORD=your-ses-smtp-password
 EMAIL_FROM=noreply@yourdomain.com
 
 # OTP Settings
-OTP_EXPIRE_MINUTES=10 
+OTP_EXPIRE_MINUTES=10
 OTP_LENGTH=6
 
 # AI Integration
@@ -142,48 +142,48 @@ docker-compose down
 
 ## 📁 Project Structure
 ```text
-user-task-management/ 
-├── app/ 
-│   ├── init.py 
-│   ├── main.py                # FastAPI application entry point                
+user-task-management/
+├── app/
+│   ├── init.py
+│   ├── main.py                # FastAPI application entry point               
 │   ├── config.py              # Configuration and environment variables
 │   ├── database.py            # MongoDB connection and setup
 │   ├── models.py              # Pydantic models and schemas
-│   ├── auth/ 
-│   │   ├── init.py 
+│   ├── auth/
+│   │   ├── init.py
 │   │   ├── routes.py          # Authentication endpoints
 │   │   ├── jwt_handler.py     # JWT token management
 │   │   ├── dependencies.py    # Auth dependencies
 │   │   └── utils.py           # Password hashing, OTP generation
-│   ├── users/ 
-│   │   ├── init.py 
-│   │   ├── routes.py          # User management endpoints 
-│   │   ├── models.py          # User data models 
-│   │   └── services.py        # User business logic 
-│   ├── tasks/ 
-│   │   ├── init.py 
-│   │   ├── routes.py          # Task management endpoints 
-│   │   ├── models.py          # Task data models 
-│   │   └── services.py        # Task business logic 
-│   ├── ai/ 
-│   │   ├── init.py 
-│   │   ├── task_analyzer.py   # AI task analysis 
-│   │   ├── categorizer.py     # AI categorization 
-│   │   └── estimator.py       # Time estimation 
-│   └── utils/ 
-│       ├── init.py 
-│       ├── email_service.py   # Email sending functionality 
-│       └── validators.py      # Custom validators 
-├── tests/ 
-│   ├── init.py 
-│   ├── test_auth.py 
-│   ├── test_users.py 
-│   └── test_tasks.py 
-├── Dockerfile 
-├── docker-compose.yml 
-├── requirements.txt 
-├── .env.example 
-├── .gitignore 
+│   ├── users/
+│   │   ├── init.py
+│   │   ├── routes.py          # User management endpoints
+│   │   ├── models.py          # User data models
+│   │   └── services.py        # User business logic
+│   ├── tasks/
+│   │   ├── init.py
+│   │   ├── routes.py          # Task management endpoints
+│   │   ├── models.py          # Task data models
+│   │   └── services.py        # Task business logic
+│   ├── ai/
+│   │   ├── init.py
+│   │   ├── task_analyzer.py   # AI task analysis
+│   │   ├── categorizer.py     # AI categorization
+│   │   └── estimator.py       # Time estimation
+│   └── utils/
+│       ├── init.py
+│       ├── email_service.py   # Email sending functionality
+│       └── validators.py      # Custom validators
+├── tests/
+│   ├── init.py
+│   ├── test_auth.py
+│   ├── test_users.py
+│   └── test_tasks.py
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+├── .env.example
+├── .gitignore
 ├── README.md
 ```
 
