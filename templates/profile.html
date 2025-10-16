@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Task Management Pro</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-check-circle-fill"></i> Task Management Pro
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto" id="navbarUser">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/profile">Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="logout()">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Profile Content -->
+    <div class="container py-4">
+        <div class="row mb-3">
+            <div class="col">
+                <a href="/dashboard" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+
+        <div id="profileContent">
+            <!-- Profile details will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div class="modal fade" id="editProfileModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-pencil"></i> Edit Profile
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editProfileForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="editFirstName" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="editFirstName">
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="editLastName" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="editLastName">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="editPhoneNumber" class="form-label">Phone Number</label>
+                            <input type="tel" class="form-control" id="editPhoneNumber">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="editBio" class="form-label">Bio</label>
+                            <textarea class="form-control" id="editBio" rows="4" 
+                                      placeholder="Tell us about yourself..."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="editProfileImage" class="form-label">Profile Image URL</label>
+                            <input type="url" class="form-control" id="editProfileImage" 
+                                   placeholder="https://example.com/image.jpg">
+                            <div class="form-text">Enter a URL to your profile image</div>
+                        </div>
+
+                        <div id="editProfileError" class="alert alert-danger d-none"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitEditProfile()">
+                        <i class="bi bi-check-circle"></i> Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="/static/js/main.js"></script>
+    
+    <script>
+        let currentUser = null;
+
+        // Check authentication
+        if (!requireAuth()) {
+            // Will redirect to login
+        }
+
+        // Load profile on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadProfile();
+        });
+
+        async function loadProfile() {
+            const container = document.getElementById('profileContent');
+            showLoading('profileContent');
+            
+            const user = getCurrentUser();
+            if (!user) {
+                container.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Failed to load profile. Please login again.
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                currentUser = await getUser(user.id);
+                displayProfile(currentUser);
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Failed to load profile: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function displayProfile(user) {
+            const profileImage = user.profile_image || 'https://via.placeholder.com/150?text=' + user.first_name.charAt(0) + user.last_name.charAt(0);
+            
+            const html = `
+                <div class="card shadow-sm mb-4">
+                    <div class="profile-header text-center">
+                        <div class="py-4">
+                            <img src="${profileImage}" alt="Profile" class="profile-image mb-3"
+                                 onerror="this.src='https://via.placeholder.com/150?text=${user.first_name.charAt(0)}${user.last_name.charAt(0)}'">
+                            <h2 class="mb-1">${user.first_name} ${user.last_name}</h2>
+                            <p class="mb-0 opacity-75">@${user.username}</p>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="mb-0">
+                                <i class="bi bi-person-circle"></i> Profile Information
+                            </h4>
+                            <button class="btn btn-primary" onclick="openEditModal()">
+                                <i class="bi bi-pencil"></i> Edit Profile
+                            </button>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body">
+                                        <small class="text-muted d-block mb-2">
+                                            <i class="bi bi-person"></i> First Name
+                                        </small>
+                                        <h5 class="mb-0">${user.first_name}</h5>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body">
+                                        <small class="text-muted d-block mb-2">
+                                            <i class="bi bi-person"></i> Last Name
+                                        </small>
+                                        <h5 class="mb-0">${user.last_name}</h5>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body">
+                                        <small class="text-muted d-block mb-2">
+                                            <i class="bi bi-at"></i> Username
+                                        </small>
+                                        <h5 class="mb-0">@${user.username}</h5>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body">
+                                        <small class="text-muted d-block mb-2">
+                                            <i class="bi bi-envelope"></i> Email
+                                        </small>
+                                        <h5 class="mb-0">${user.email}</h5>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body">
+                                        <small class="text-muted d-block mb-2">
+                                            <i class="bi bi-telephone"></i> Phone Number
+                                        </small>
+                                        <h5 class="mb-0">${user.phone_number}</h5>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body">
+                                        <small class="text-muted d-block mb-2">
+                                            <i class="bi bi-calendar-check"></i> Member Since
+                                        </small>
+                                        <h5 class="mb-0">${formatDate(user.created_at)}</h5>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${user.bio ? `
+                            <div class="card bg-light border-0 mb-4">
+                                <div class="card-body">
+                                    <small class="text-muted d-block mb-2">
+                                        <i class="bi bi-journal-text"></i> Bio
+                                    </small>
+                                    <p class="mb-0">${user.bio}</p>
+                                </div>
+                            </div>
+                        ` : `
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> You haven't added a bio yet. Click "Edit Profile" to add one!
+                            </div>
+                        `}
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="card shadow-sm text-center h-100">
+                            <div class="card-body">
+                                <div class="display-4 text-primary mb-3">
+                                    <i class="bi bi-list-check"></i>
+                                </div>
+                                <h5 class="card-title">Your Tasks</h5>
+                                <p class="text-muted">View and manage all your tasks</p>
+                                <a href="/dashboard" class="btn btn-primary">
+                                    Go to Dashboard
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card shadow-sm text-center h-100">
+                            <div class="card-body">
+                                <div class="display-4 text-success mb-3">
+                                    <i class="bi bi-shield-check"></i>
+                                </div>
+                                <h5 class="card-title">Account Security</h5>
+                                <p class="text-muted">Your account is secure</p>
+                                <button class="btn btn-outline-secondary" disabled>
+                                    Change Password
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card shadow-sm text-center h-100">
+                            <div class="card-body">
+                                <div class="display-4 text-info mb-3">
+                                    <i class="bi bi-gear"></i>
+                                </div>
+                                <h5 class="card-title">Settings</h5>
+                                <p class="text-muted">Customize your experience</p>
+                                <button class="btn btn-outline-secondary" disabled>
+                                    Preferences
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('profileContent').innerHTML = html;
+        }
+
+        function openEditModal() {
+            if (!currentUser) return;
+            
+            document.getElementById('editFirstName').value = currentUser.first_name;
+            document.getElementById('editLastName').value = currentUser.last_name;
+            document.getElementById('editPhoneNumber').value = currentUser.phone_number;
+            document.getElementById('editBio').value = currentUser.bio || '';
+            document.getElementById('editProfileImage').value = currentUser.profile_image || '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('editProfileModal'));
+            modal.show();
+        }
+
+        async function submitEditProfile() {
+            const firstName = document.getElementById('editFirstName').value;
+            const lastName = document.getElementById('editLastName').value;
+            const phoneNumber = document.getElementById('editPhoneNumber').value;
+            const bio = document.getElementById('editBio').value;
+            const profileImage = document.getElementById('editProfileImage').value;
+            
+            const userData = {};
+            
+            if (firstName && firstName !== currentUser.first_name) {
+                userData.first_name = firstName;
+            }
+            if (lastName && lastName !== currentUser.last_name) {
+                userData.last_name = lastName;
+            }
+            if (phoneNumber && phoneNumber !== currentUser.phone_number) {
+                userData.phone_number = phoneNumber;
+            }
+            if (bio !== currentUser.bio) {
+                userData.bio = bio || null;
+            }
+            if (profileImage !== currentUser.profile_image) {
+                userData.profile_image = profileImage || null;
+            }
+            
+            if (Object.keys(userData).length === 0) {
+                showToast('No changes to save', 'info');
+                return;
+            }
+            
+            try {
+                const updatedUser = await updateUser(currentUser.id, userData);
+                
+                // Update local storage
+                const user = getCurrentUser();
+                const mergedUser = { ...user, ...updatedUser };
+                localStorage.setItem('user', JSON.stringify(mergedUser));
+                
+                showToast('Profile updated successfully!', 'success');
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editProfileModal'));
+                modal.hide();
+                
+                // Reload profile
+                await loadProfile();
+            } catch (error) {
+                const errorDiv = document.getElementById('editProfileError');
+                errorDiv.textContent = 'Failed to update profile: ' + error.message;
+                errorDiv.classList.remove('d-none');
+            }
+        }
+    </script>
+</body>
+</html>
+

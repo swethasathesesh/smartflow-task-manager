@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Task Management Pro</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="card shadow-lg">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <h1 class="h3 mb-3 fw-bold">
+                            <i class="bi bi-check-circle-fill" style="color: var(--primary-color);"></i>
+                            Task Management Pro
+                        </h1>
+                        <h2 class="h4 mb-3">Create Your Account</h2>
+                        <p class="text-muted">Join us and start managing your tasks</p>
+                    </div>
+
+                    <form id="registerForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="firstName" class="form-label">
+                                    <i class="bi bi-person"></i> First Name
+                                </label>
+                                <input type="text" class="form-control" id="firstName" 
+                                       placeholder="John" required>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="lastName" class="form-label">
+                                    <i class="bi bi-person"></i> Last Name
+                                </label>
+                                <input type="text" class="form-control" id="lastName" 
+                                       placeholder="Doe" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="username" class="form-label">
+                                <i class="bi bi-at"></i> Username
+                            </label>
+                            <input type="text" class="form-control" id="username" 
+                                   placeholder="johndoe" required minlength="3">
+                            <div class="form-text">At least 3 characters</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">
+                                <i class="bi bi-envelope"></i> Email Address
+                            </label>
+                            <input type="email" class="form-control" id="email" 
+                                   placeholder="john.doe@example.com" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="phoneNumber" class="form-label">
+                                <i class="bi bi-telephone"></i> Phone Number
+                            </label>
+                            <input type="tel" class="form-control" id="phoneNumber" 
+                                   placeholder="+1234567890" required minlength="10">
+                            <div class="form-text">Include country code (e.g., +1234567890)</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">
+                                <i class="bi bi-lock"></i> Password
+                            </label>
+                            <input type="password" class="form-control" id="password" 
+                                   placeholder="Enter a strong password" required minlength="6">
+                            <div class="form-text">At least 6 characters</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">
+                                <i class="bi bi-lock-fill"></i> Confirm Password
+                            </label>
+                            <input type="password" class="form-control" id="confirmPassword" 
+                                   placeholder="Confirm your password" required>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="agreeTerms" required>
+                            <label class="form-check-label" for="agreeTerms">
+                                I agree to the Terms of Service and Privacy Policy
+                            </label>
+                        </div>
+
+                        <div id="errorMessage" class="alert alert-danger d-none" role="alert"></div>
+
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-person-plus"></i> Create Account
+                            </button>
+                        </div>
+
+                        <div class="text-center">
+                            <p class="mb-0">
+                                Already have an account? 
+                                <a href="/login" class="text-decoration-none fw-bold">Login here</a>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="text-center mt-3">
+                <a href="/" class="text-white text-decoration-none">
+                    <i class="bi bi-arrow-left"></i> Back to Home
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="/static/js/main.js"></script>
+    
+    <script>
+        // Check if already logged in
+        if (isAuthenticated()) {
+            window.location.href = '/dashboard';
+        }
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const phoneNumber = document.getElementById('phoneNumber').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const errorDiv = document.getElementById('errorMessage');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            
+            // Reset error state
+            errorDiv.classList.add('d-none');
+            
+            // Validate passwords match
+            if (password !== confirmPassword) {
+                errorDiv.textContent = 'Passwords do not match!';
+                errorDiv.classList.remove('d-none');
+                return;
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating account...';
+            
+            try {
+                const userData = {
+                    first_name: firstName,
+                    last_name: lastName,
+                    username: username,
+                    email: email,
+                    phone_number: phoneNumber,
+                    password: password
+                };
+                
+                await register(userData);
+                
+                // Show success message
+                showToast('Registration successful! Please login.', 'success');
+                
+                // Redirect to login
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 1500);
+                
+            } catch (error) {
+                errorDiv.textContent = error.message || 'Registration failed. Please try again.';
+                errorDiv.classList.remove('d-none');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-person-plus"></i> Create Account';
+            }
+        });
+    </script>
+</body>
+</html>
+
