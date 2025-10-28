@@ -2,25 +2,63 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from urllib.parse import quote_plus
 import certifi
+import os
+from dotenv import load_dotenv
 
-# ⚠️ IMPORTANT: Replace this with your actual MongoDB password
-# If your password has special characters like @, #, !, etc., they will be automatically encoded
-MONGODB_PASSWORD = "sarath0899"  # ← REPLACE THIS WITH YOUR REAL PASSWORD
-MONGODB_USERNAME = "sarathmrtvm"
+# Load environment variables
+load_dotenv()
+
+# Database configuration from environment variables with fallbacks
+MONGODB_PASSWORD = os.getenv("MONGODB_PASSWORD", "uiet huer ofgh igfh")
+MONGODB_USERNAME = os.getenv("MONGODB_USERNAME", "sarathmrtvm")
+MONGODB_CLUSTER = os.getenv("MONGODB_CLUSTER", "cluster0.gg6brmy.mongodb.net")
+DATABASE_NAME = os.getenv("DATABASE_NAME", "task_manager-pro")
+
+print(f"Connecting to MongoDB as user: {MONGODB_USERNAME}")
 
 # Encode password for URL (handles special characters)
 encoded_password = quote_plus(MONGODB_PASSWORD)
-uri = f"mongodb+srv://{MONGODB_USERNAME}:{encoded_password}@cluster0.gg6brmy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+uri = f"mongodb+srv://{MONGODB_USERNAME}:{encoded_password}@{MONGODB_CLUSTER}/?retryWrites=true&w=majority&appName=Cluster0"
 
-# Create a new client and connect to the server with SSL certificate
-# Using certifi for proper SSL certificate verification
-client = MongoClient(
-    uri, 
-    server_api=ServerApi('1'),
-    tlsCAFile=certifi.where()
-)
+print("MongoDB URI constructed successfully")
 
-db = client.get_database("task_manager-pro")
-
-users_collection = db.get_collection("users")
-tasks_collection = db.get_collection("tasks")
+try:
+    # Create a new client and connect to the server with SSL certificate
+    # Using certifi for proper SSL certificate verification
+    client = MongoClient(
+        uri, 
+        server_api=ServerApi('1'),
+        tlsCAFile=certifi.where(),
+        serverSelectionTimeoutMS=5000  # 5 second timeout
+    )
+    
+    # Test the connection
+    client.admin.command('ping')
+    print("Successfully connected to MongoDB!")
+    
+    db = client.get_database(DATABASE_NAME)
+    
+    users_collection = db.get_collection("users")
+    tasks_collection = db.get_collection("tasks")
+    
+    # Create indexes for performance (if they don't exist already)
+    try:
+        users_collection.create_index("email", unique=True)
+        users_collection.create_index("username", unique=True)
+        tasks_collection.create_index("user_id")
+        tasks_collection.create_index([("user_id", 1), ("status", 1), ("created_at", -1)])
+        print("Database indexes created successfully!")
+    except Exception as idx_error:
+        print(f"Index creation warning: {idx_error}")
+        pass  # Indexes might already exist
+        
+except Exception as e:
+    print(f"Error connecting to MongoDB: {e}")
+    print("Please check your MongoDB credentials in .env file")
+    # Create dummy collections to prevent NoneType errors
+    class DummyCollection:
+        def __getattr__(self, name):
+            raise Exception("MongoDB connection failed. Please check your credentials.")
+    users_collection = DummyCollection()
+    tasks_collection = DummyCollection()
+    raise

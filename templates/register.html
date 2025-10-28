@@ -58,17 +58,30 @@
                             <label for="email" class="form-label">
                                 <i class="bi bi-envelope"></i> Email Address
                             </label>
-                            <input type="email" class="form-control" id="email" 
-                                   placeholder="john.doe@example.com" required>
+                            <div class="input-group">
+                                <input type="email" class="form-control" id="email" 
+                                       placeholder="john.doe@example.com" required
+                                       onblur="checkEmailAvailability(this.value)">
+                                <span class="input-group-text d-none" id="emailCheckIcon">
+                                    <span class="spinner-border spinner-border-sm" id="emailSpinner"></span>
+                                </span>
+                            </div>
+                            <div id="emailFeedback" class="form-text"></div>
                         </div>
 
                         <div class="mb-3">
                             <label for="phoneNumber" class="form-label">
                                 <i class="bi bi-telephone"></i> Phone Number
                             </label>
-                            <input type="tel" class="form-control" id="phoneNumber" 
-                                   placeholder="+1234567890" required minlength="10">
-                            <div class="form-text">Include country code (e.g., +1234567890)</div>
+                            <div class="input-group">
+                                <input type="tel" class="form-control" id="phoneNumber" 
+                                       placeholder="+1234567890" required
+                                       onblur="validatePhoneNumber(this.value)">
+                                <span class="input-group-text d-none" id="phoneCheckIcon">
+                                    <span class="spinner-border spinner-border-sm" id="phoneSpinner"></span>
+                                </span>
+                            </div>
+                            <div id="phoneFeedback" class="form-text">Include country code (e.g., +1234567890)</div>
                         </div>
 
                         <div class="mb-3">
@@ -76,8 +89,8 @@
                                 <i class="bi bi-lock"></i> Password
                             </label>
                             <input type="password" class="form-control" id="password" 
-                                   placeholder="Enter a strong password" required minlength="6">
-                            <div class="form-text">At least 6 characters</div>
+                                   placeholder="Enter a strong password" required minlength="8">
+                            <div class="form-text">At least 8 characters with uppercase, lowercase, number, and special character</div>
                         </div>
 
                         <div class="mb-3">
@@ -95,11 +108,36 @@
                             </label>
                         </div>
 
+                        <!-- OTP Verification Section (initially hidden) -->
+                        <div id="otpSection" class="mb-3 d-none">
+                            <div class="alert alert-info">
+                                <i class="bi bi-shield-lock"></i> We've sent a verification code to your email. Please enter it below.
+                            </div>
+                            <div class="mb-3">
+                                <label for="otp" class="form-label">
+                                    <i class="bi bi-shield-lock"></i> Verification Code
+                                </label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="otp" 
+                                           placeholder="Enter 6-digit code" maxlength="6">
+                                    <button class="btn btn-outline-secondary" type="button" id="resendOtpBtn" 
+                                            onclick="resendOtp()" disabled>
+                                        Resend OTP <span id="resendTimer"></span>
+                                    </button>
+                                </div>
+                                <div id="otpFeedback" class="form-text"></div>
+                            </div>
+                        </div>
+
                         <div id="errorMessage" class="alert alert-danger d-none" role="alert"></div>
 
-                        <div class="d-grid mb-3">
-                            <button type="submit" class="btn btn-primary btn-lg">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
                                 <i class="bi bi-person-plus"></i> Create Account
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm d-none" id="backToFormBtn"
+                                    onclick="backToForm()">
+                                <i class="bi bi-arrow-left"></i> Back to Form
                             </button>
                         </div>
 
@@ -124,7 +162,7 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
-    <script src="/static/js/main.js"></script>
+    <script src="/static/js/main.js?v=2.0"></script>
     
     <script>
         // Check if already logged in
@@ -132,58 +170,359 @@
             window.location.href = '/dashboard';
         }
 
+        let emailCheckTimeout;
+        let phoneCheckTimeout;
+        
+        // Function to validate phone number format
+        function validatePhoneNumberFormat(phone) {
+            if (!phone) return { valid: false, message: 'Phone number is required' };
+            
+            // Remove all non-digit characters
+            const digitsOnly = phone.replace(/\D/g, '');
+            
+            // Check if it's exactly 10 digits
+            if (digitsOnly.length !== 10) {
+                return { 
+                    valid: false, 
+                    message: 'Please enter a valid 10-digit mobile number' 
+                };
+            }
+            
+            // Check if it starts with a valid Indian mobile number prefix (6-9)
+            if (!/^[6-9]\d{9}$/.test(digitsOnly)) {
+                return { 
+                    valid: false, 
+                    message: 'Please enter a valid Indian mobile number starting with 6-9' 
+                };
+            }
+            
+            return { 
+                valid: true,
+                formatted: digitsOnly // Return cleaned number for storage
+            };
+        }
+        
+        // Function to check phone number availability
+        async function checkPhoneNumber(phone) {
+            const phoneInput = document.getElementById('phoneNumber');
+            const phoneFeedback = document.getElementById('phoneFeedback');
+            const phoneCheckIcon = document.getElementById('phoneCheckIcon');
+            const phoneSpinner = document.getElementById('phoneSpinner');
+            
+            // Clear any existing timeout
+            clearTimeout(phoneCheckTimeout);
+            
+            // Basic phone number validation
+            const validation = validatePhoneNumberFormat(phone);
+            if (!validation.valid) {
+                phoneFeedback.textContent = validation.message;
+                phoneFeedback.className = 'form-text text-danger';
+                phoneInput.classList.add('is-invalid');
+                return false;
+            }
+            
+            // Format the phone number for display (adds space after 5 digits)
+            const formattedPhone = validation.formatted.replace(/(\d{5})(\d{5})/, '$1 $2');
+            phoneInput.value = formattedPhone; // Update the input with formatted number
+            
+            // Show loading spinner
+            phoneCheckIcon.classList.remove('d-none');
+            phoneSpinner.classList.remove('d-none');
+            phoneInput.classList.remove('is-invalid', 'is-valid');
+            
+            try {
+                // Add a small delay to avoid too many requests
+                const isAvailable = await new Promise((resolve) => {
+                    phoneCheckTimeout = setTimeout(async () => {
+                        try {
+                            const response = await fetch(`/api/auth/check-phone?phone=${encodeURIComponent(phone)}`);
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            const data = await response.json();
+                            resolve(!data.exists);
+                        } catch (error) {
+                            console.error('Error checking phone:', error);
+                            resolve(true); // Assume phone is available if there's an error
+                        }
+                    }, 500);
+                });
+                
+                if (isAvailable) {
+                    phoneInput.classList.add('is-valid');
+                    phoneFeedback.textContent = 'Phone number is available';
+                    phoneFeedback.className = 'form-text text-success';
+                } else {
+                    phoneInput.classList.add('is-invalid');
+                    phoneFeedback.textContent = 'This phone number is already registered';
+                    phoneFeedback.className = 'form-text text-danger';
+                }
+                return isAvailable;
+            } finally {
+                // Hide spinner after check is complete
+                phoneSpinner.classList.add('d-none');
+                if (phoneInput.value !== phone) {
+                    // If the phone has changed while we were checking, clear the icon
+                    phoneCheckIcon.classList.add('d-none');
+                }
+            }
+        }
+        
+        // Function to validate phone number (format only)
+        function validatePhoneNumber(phone) {
+            const validation = validatePhoneNumberFormat(phone);
+            const phoneInput = document.getElementById('phoneNumber');
+            const phoneFeedback = document.getElementById('phoneFeedback');
+            
+            if (!validation.valid) {
+                phoneInput.classList.add('is-invalid');
+                phoneFeedback.textContent = validation.message;
+                phoneFeedback.className = 'form-text text-danger';
+                return false;
+            }
+            
+            // If format is valid, check availability
+            return checkPhoneNumber(phone);
+        }
+        
+        // Function to check email availability
+        async function checkEmailAvailability(email) {
+            const emailInput = document.getElementById('email');
+            const emailFeedback = document.getElementById('emailFeedback');
+            const emailCheckIcon = document.getElementById('emailCheckIcon');
+            const emailSpinner = document.getElementById('emailSpinner');
+            
+            // Clear any existing timeout
+            clearTimeout(emailCheckTimeout);
+            
+            // Basic email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                emailFeedback.textContent = 'Please enter a valid email address';
+                emailFeedback.className = 'form-text text-danger';
+                emailInput.classList.add('is-invalid');
+                return false;
+            }
+            
+            // Show loading spinner
+            emailCheckIcon.classList.remove('d-none');
+            emailSpinner.classList.remove('d-none');
+            emailInput.classList.remove('is-invalid', 'is-valid');
+            
+            try {
+                // Add a small delay to avoid too many requests
+                const isAvailable = await new Promise((resolve) => {
+                    emailCheckTimeout = setTimeout(async () => {
+                        try {
+                            const exists = await checkEmailExists(email);
+                            resolve(!exists);
+                        } catch (error) {
+                            console.error('Error checking email:', error);
+                            resolve(true); // Assume email is available if there's an error
+                        }
+                    }, 500);
+                });
+                
+                if (isAvailable) {
+                    emailInput.classList.add('is-valid');
+                    emailFeedback.textContent = 'Email is available';
+                    emailFeedback.className = 'form-text text-success';
+                } else {
+                    emailInput.classList.add('is-invalid');
+                    emailFeedback.textContent = 'This email is already registered';
+                    emailFeedback.className = 'form-text text-danger';
+                }
+                return isAvailable;
+            } finally {
+                // Hide spinner after check is complete
+                emailSpinner.classList.add('d-none');
+                if (emailInput.value !== email) {
+                    // If the email has changed while we were checking, clear the icon
+                    emailCheckIcon.classList.add('d-none');
+                }
+            }
+        }
+
+        // Function to show error message
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.classList.remove('d-none');
+            window.scrollTo(0, 0);
+        }
+
+        // Function to handle OTP verification
+        async function handleOtpVerification(email, otp) {
+            const submitBtn = document.getElementById('submitBtn');
+            const originalBtnText = submitBtn.innerHTML;
+            
+            try {
+                // Show loading state
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Verifying...';
+                
+                // Verify OTP
+                const verification = await verifyOtp(email, otp);
+                
+                if (!verification.success) {
+                    throw new Error(verification.error || 'OTP verification failed');
+                }
+                
+                return true;
+            } catch (error) {
+                showError(error.message || 'Failed to verify OTP. Please try again.');
+                return false;
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            }
+        }
+        
+        // Handle registration form submission
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const firstName = document.getElementById('firstName').value;
             const lastName = document.getElementById('lastName').value;
             const username = document.getElementById('username').value;
-            const email = document.getElementById('email').value;
+            const email = document.getElementById('email').value.trim().toLowerCase();
             const phoneNumber = document.getElementById('phoneNumber').value;
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
-            const errorDiv = document.getElementById('errorMessage');
-            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const agreeTerms = document.getElementById('agreeTerms').checked;
+            const otp = document.getElementById('otp') ? document.getElementById('otp').value.trim() : '';
             
-            // Reset error state
-            errorDiv.classList.add('d-none');
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.classList.add('d-none');
             
-            // Validate passwords match
-            if (password !== confirmPassword) {
-                errorDiv.textContent = 'Passwords do not match!';
-                errorDiv.classList.remove('d-none');
+            // Check if we're in OTP verification mode
+            const isOtpVerification = document.getElementById('otpSection') && 
+                                     !document.getElementById('otpSection').classList.contains('d-none');
+            
+            // Basic validation for all fields (except OTP in initial form)
+            if (!isOtpVerification && (!firstName || !lastName || !username || !email || !phoneNumber || !password || !confirmPassword)) {
+                showError('All fields are required');
                 return;
             }
             
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating account...';
+            if (!isOtpVerification && password !== confirmPassword) {
+                showError('Passwords do not match');
+                return;
+            }
+            
+            if (!isOtpVerification) {
+                // Validate password strength
+                if (password.length < 8) {
+                    showError('Password must be at least 8 characters long');
+                    return;
+                }
+                if (!/[A-Z]/.test(password)) {
+                    showError('Password must contain at least one uppercase letter');
+                    return;
+                }
+                if (!/[a-z]/.test(password)) {
+                    showError('Password must contain at least one lowercase letter');
+                    return;
+                }
+                if (!/\d/.test(password)) {
+                    showError('Password must contain at least one number');
+                    return;
+                }
+                if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+                    showError('Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)');
+                    return;
+                }
+            }
+            
+            if (!agreeTerms) {
+                showError('You must agree to the terms and conditions');
+                return;
+            }
+            
+            // Validate email format
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showError('Please enter a valid email address');
+                return;
+            }
+            
+            // Validate phone number format (10-digit Indian mobile number)
+            const phoneDigits = phoneNumber.replace(/\D/g, '');
+            if (!/^[6-9]\d{9}$/.test(phoneDigits)) {
+                showError('Please enter a valid 10-digit Indian mobile number starting with 6-9');
+                return;
+            }
+            
+            const userData = {
+                first_name: firstName,
+                last_name: lastName,
+                username: username,
+                email: email,
+                phone_number: phoneDigits,
+                password: password
+            };
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const originalBtnText = submitBtn.innerHTML;
             
             try {
-                const userData = {
-                    first_name: firstName,
-                    last_name: lastName,
-                    username: username,
-                    email: email,
-                    phone_number: phoneNumber,
-                    password: password
-                };
+                // Show loading state
+                submitBtn.disabled = true;
                 
-                await register(userData);
-                
-                // Show success message
-                showToast('Registration successful! Please login.', 'success');
-                
-                // Redirect to login
-                setTimeout(() => {
-                    window.location.href = '/login';
-                }, 1500);
+                if (!isOtpVerification) {
+                    // First step: Send OTP
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending OTP...';
+                    
+                    // Check if email already exists
+                    const emailExists = await checkEmailExists(email);
+                    if (emailExists) {
+                        throw new Error('An account with this email already exists');
+                    }
+                    
+                    // Send OTP
+                    const otpResponse = await sendOtpForRegistration(email);
+                    if (!otpResponse.success) {
+                        throw new Error(otpResponse.error || 'Failed to send OTP');
+                    }
+                    
+                    // Show OTP section
+                    showOtpSection(email);
+                    showToast('OTP has been sent to your email', 'success');
+                    
+                } else {
+                    // Second step: Verify OTP and complete registration
+                    if (!otp || otp.length !== 6) {
+                        throw new Error('Please enter a valid 6-digit OTP');
+                    }
+                    
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Verifying OTP...';
+                    
+                    // Verify OTP
+                    const otpVerified = await handleOtpVerification(email, otp);
+                    if (!otpVerified) {
+                        return; // Error is shown in handleOtpVerification
+                    }
+                    
+                    // OTP verified, proceed with registration
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Creating Account...';
+                    
+                    // Register the user with OTP
+                    const response = await register(userData, otp);
+                    
+                    // Store the user data and token
+                    setAuthData(response.access_token, response.user);
+                    
+                    // Show success message and redirect
+                    showToast('Registration successful! Redirecting to dashboard...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 1500);
+                }
                 
             } catch (error) {
-                errorDiv.textContent = error.message || 'Registration failed. Please try again.';
-                errorDiv.classList.remove('d-none');
+                console.error('Registration error:', error);
+                showError(error.message || 'An error occurred. Please try again.');
+            } finally {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="bi bi-person-plus"></i> Create Account';
-            }
+                submitBtn.innerHTML = originalBtnText;
+            }    
         });
     </script>
 </body>

@@ -14,7 +14,7 @@
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+    <nav class="navbar navbar-expand-lg navbar-light shadow-sm">
         <div class="container-fluid">
             <a class="navbar-brand" href="/">
                 <i class="bi bi-check-circle-fill"></i> Task Management Pro
@@ -23,15 +23,12 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto" id="navbarUser">
+                <ul class="navbar-nav ms-auto align-items-lg-center" id="navbarUser">
                     <li class="nav-item">
-                        <a class="nav-link" href="/dashboard">Dashboard</a>
+                        <a class="nav-link" href="/login">Login</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/profile">Profile</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="logout()">Logout</a>
+                        <a class="btn btn-primary ms-lg-2 mt-2 mt-lg-0" href="/register">Get Started</a>
                     </li>
                 </ul>
             </div>
@@ -307,17 +304,24 @@
                                             <i class="bi bi-alarm"></i> Due Date
                                         </small>
                                         <strong class="${new Date(task.due_date) < new Date() && task.status !== 'completed' ? 'text-danger' : ''}">
-                                            ${formatDate(task.due_date)}
+                                            ${formatDateWithRelative(task.due_date)}
                                         </strong>
+                                        ${new Date(task.due_date) < new Date() && task.status !== 'completed' ? 
+                                            '<br><small class="text-danger"><i class="bi bi-exclamation-triangle"></i> Overdue</small>' : ''}
                                     </div>
                                 ` : ''}
 
                                 ${task.end_time ? `
                                     <div class="mb-3">
                                         <small class="text-muted d-block mb-1">
-                                            <i class="bi bi-stop-circle"></i> End Time
+                                            <i class="bi bi-stop-circle"></i> Completed At
                                         </small>
-                                        <strong>${formatDate(task.end_time)}</strong>
+                                        <strong class="text-success">${formatDate(task.end_time)}</strong>
+                                        ${task.start_time ? `
+                                            <br><small class="text-muted">
+                                                <i class="bi bi-clock"></i> Duration: ${calculateDuration(task.start_time, task.end_time)}
+                                            </small>
+                                        ` : ''}
                                     </div>
                                 ` : ''}
                             </div>
@@ -393,6 +397,7 @@
             
             const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
             
+            // Convert datetime-local values to ISO strings
             const taskData = {
                 title,
                 description,
@@ -400,9 +405,9 @@
                 status,
                 tags,
                 notes: notes || null,
-                start_time: startTime || null,
-                due_date: dueDate || null,
-                end_time: endTime || null
+                start_time: startTime ? new Date(startTime).toISOString() : null,
+                due_date: dueDate ? new Date(dueDate).toISOString() : null,
+                end_time: endTime ? new Date(endTime).toISOString() : null
             };
             
             try {
@@ -425,8 +430,24 @@
         async function updateTaskStatus(newStatus) {
             try {
                 const updateData = { status: newStatus };
-                if (newStatus === 'completed' && !currentTask.end_time) {
-                    updateData.end_time = new Date().toISOString();
+                
+                // Handle end time based on status change
+                if (newStatus === 'completed') {
+                    // Set end time to now if not already set
+                    if (!currentTask.end_time) {
+                        updateData.end_time = new Date().toISOString();
+                        showToast('Task completed! End time set to now.', 'success');
+                    }
+                } else if (currentTask.status === 'completed' && newStatus !== 'completed') {
+                    // Clear end time when reopening a completed task
+                    updateData.end_time = null;
+                    showToast('Task reopened! End time cleared.', 'info');
+                }
+                
+                // Set start time if moving to in_progress and not already set
+                if (newStatus === 'in_progress' && !currentTask.start_time) {
+                    updateData.start_time = new Date().toISOString();
+                    showToast('Task started! Start time set to now.', 'info');
                 }
                 
                 await updateTask(taskId, updateData);

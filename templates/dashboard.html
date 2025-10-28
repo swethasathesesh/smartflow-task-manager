@@ -14,7 +14,7 @@
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+    <nav class="navbar navbar-expand-lg navbar-light shadow-sm">
         <div class="container-fluid">
             <a class="navbar-brand" href="/">
                 <i class="bi bi-check-circle-fill"></i> Task Management Pro
@@ -23,15 +23,12 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto" id="navbarUser">
+                <ul class="navbar-nav ms-auto align-items-lg-center" id="navbarUser">
                     <li class="nav-item">
-                        <a class="nav-link" href="/dashboard">Dashboard</a>
+                        <a class="nav-link" href="/login">Login</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/profile">Profile</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="logout()">Logout</a>
+                        <a class="btn btn-primary ms-lg-2 mt-2 mt-lg-0" href="/register">Get Started</a>
                     </li>
                 </ul>
             </div>
@@ -39,14 +36,18 @@
     </nav>
 
     <!-- Dashboard Header -->
-    <div class="bg-primary text-white py-4">
-        <div class="container-fluid">
+    <div class="container-fluid py-4">
+        <div class="dashboard-hero">
             <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h1 class="h2 mb-0" id="welcomeMessage">Task Dashboard</h1>
-                    <p class="mb-0 opacity-75" id="dashboardSubtitle">Manage your tasks efficiently</p>
+                <div class="col-lg-8">
+                    <span class="dashboard-kicker">
+                        <i class="bi bi-lightning-charge"></i>
+                        Productivity Hub
+                    </span>
+                    <h1 class="mb-2" id="welcomeMessage">Task Dashboard</h1>
+                    <p class="mb-0" id="dashboardSubtitle">Manage your tasks efficiently</p>
                 </div>
-                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
                     <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#createTaskModal">
                         <i class="bi bi-plus-circle"></i> Create New Task
                     </button>
@@ -57,6 +58,62 @@
 
     <!-- Dashboard Content -->
     <div class="container-fluid py-4">
+        <!-- Statistics Section -->
+        <div class="row mb-4" id="statisticsSection">
+            <div class="col-md-3 mb-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-white-50 mb-0">Total Tasks</h6>
+                                <h2 class="mb-0" id="statTotal">0</h2>
+                            </div>
+                            <i class="bi bi-list-check fs-1 opacity-25"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-white-50 mb-0">In Progress</h6>
+                                <h2 class="mb-0" id="statInProgress">0</h2>
+                            </div>
+                            <i class="bi bi-hourglass-split fs-1 opacity-25"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-white-50 mb-0">Completed</h6>
+                                <h2 class="mb-0" id="statCompleted">0</h2>
+                            </div>
+                            <i class="bi bi-check-circle fs-1 opacity-25"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-danger text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-white-50 mb-0">Overdue</h6>
+                                <h2 class="mb-0" id="statOverdue">0</h2>
+                            </div>
+                            <i class="bi bi-exclamation-triangle fs-1 opacity-25"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Filter Section -->
         <div class="row mb-4">
             <div class="col-12">
@@ -99,7 +156,7 @@
                         <i class="bi bi-list-task"></i> Todo
                         <span class="badge bg-primary rounded-pill float-end" id="todoCount">0</span>
                     </div>
-                    <div id="todoTasks" class="task-list">
+                    <div id="todoTasks" class="task-list todo" data-status="todo">
                         <!-- Tasks will be loaded here -->
                     </div>
                 </div>
@@ -112,7 +169,7 @@
                         <i class="bi bi-hourglass-split"></i> In Progress
                         <span class="badge bg-warning rounded-pill float-end" id="inProgressCount">0</span>
                     </div>
-                    <div id="inProgressTasks" class="task-list">
+                    <div id="inProgressTasks" class="task-list in-progress" data-status="in_progress">
                         <!-- Tasks will be loaded here -->
                     </div>
                 </div>
@@ -125,7 +182,7 @@
                         <i class="bi bi-check-circle"></i> Completed
                         <span class="badge bg-success rounded-pill float-end" id="completedCount">0</span>
                     </div>
-                    <div id="completedTasks" class="task-list">
+                    <div id="completedTasks" class="task-list completed" data-status="completed">
                         <!-- Tasks will be loaded here -->
                     </div>
                 </div>
@@ -231,6 +288,9 @@
 
         // Load user info and tasks on page load
         document.addEventListener('DOMContentLoaded', async () => {
+            // Update navbar with user info
+            updateNavbar();
+            
             const user = getCurrentUser();
             if (user) {
                 document.getElementById('welcomeMessage').textContent = `Welcome back, ${user.first_name}!`;
@@ -238,7 +298,26 @@
             }
             
             await loadTasks();
+            await loadStatistics();
         });
+        
+        // Load statistics
+        async function loadStatistics() {
+            try {
+                const user = getCurrentUser();
+                if (!user) return;
+                
+                const stats = await getTaskStatistics(user.id);
+                
+                // Update statistics cards
+                document.getElementById('statTotal').textContent = stats.total || 0;
+                document.getElementById('statInProgress').textContent = stats.in_progress || 0;
+                document.getElementById('statCompleted').textContent = stats.completed || 0;
+                document.getElementById('statOverdue').textContent = stats.overdue || 0;
+            } catch (error) {
+                console.error('Failed to load statistics:', error);
+            }
+        }
 
         async function loadTasks() {
             showLoading('todoTasks');
@@ -286,6 +365,11 @@
             completedContainer.innerHTML = completedTasks.length > 0 
                 ? completedTasks.map(task => createTaskCard(task)).join('') 
                 : '<div class="empty-state"><div class="empty-state-icon"><i class="bi bi-inbox"></i></div><p>No tasks here</p></div>';
+            
+            // Re-initialize drag and drop after tasks are loaded
+            if (typeof initializeDragAndDrop === 'function') {
+                initializeDragAndDrop();
+            }
         }
 
         function filterTasks(filter) {
@@ -318,6 +402,7 @@
             
             const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
             
+            // Convert datetime-local values to ISO strings
             const taskData = {
                 title,
                 description,
@@ -325,8 +410,8 @@
                 status,
                 tags,
                 notes: notes || null,
-                start_time: startTime || null,
-                due_date: dueDate || null
+                start_time: startTime ? new Date(startTime).toISOString() : null,
+                due_date: dueDate ? new Date(dueDate).toISOString() : null
             };
             
             try {
@@ -338,8 +423,12 @@
                 modal.hide();
                 form.reset();
                 
-                // Reload tasks
+                // Clear any error messages
+                document.getElementById('createTaskError').classList.add('d-none');
+                
+                // Reload tasks and statistics
                 await loadTasks();
+                await loadStatistics();
             } catch (error) {
                 const errorDiv = document.getElementById('createTaskError');
                 errorDiv.textContent = 'Failed to create task: ' + error.message;
