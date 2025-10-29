@@ -298,6 +298,78 @@
                 console.error('Error loading user stats:', error);
             }
         }
+
+        // === Notification Preferences Logic ===
+        document.addEventListener('DOMContentLoaded', async function() {
+            const userObj = localStorage.getItem('user');
+            let user = null;
+            try {
+                user = userObj ? JSON.parse(userObj) : null;
+            } catch(e) { user = null; }
+            // Find toggle elements
+            const emailNotificationsToggle = document.getElementById('emailNotifications');
+            const taskRemindersToggle = document.getElementById('taskReminders');
+            const weeklyReportsToggle = document.getElementById('weeklyReports');
+            const saveBtn = document.querySelector('.settings-section .btn.btn-primary');
+
+            if (!user || !user.id) {
+                // You must be logged in to view settings
+                return;
+            }
+
+            // Helper
+            function showToast(message, type = 'info') {
+                if (window.showToast) return window.showToast(message, type);
+                // fallback
+                alert(`[${type}] ${message}`);
+            }
+
+            // LOAD current settings
+            async function loadPreferences() {
+                try {
+                    const settings = await window.getUserSettings(user.id);
+                    // Defensive nested access
+                    const s = settings.settings || settings;
+                    // If undefined fallback to true/false
+                    if (emailNotificationsToggle) emailNotificationsToggle.checked = !!s.email_notifications;
+                    if (taskRemindersToggle) taskRemindersToggle.checked = !!s.task_reminders;
+                    if (weeklyReportsToggle) weeklyReportsToggle.checked = !!s.weekly_reports;
+                } catch(err) {
+                    showToast('Could not load notification preferences!', 'danger');
+                }
+            }
+
+            // SAVE settings
+            async function savePreferences() {
+                saveBtn.disabled = true;
+                try {
+                    // Fetch existing settings to avoid overwriting others
+                    let settings = await window.getUserSettings(user.id);
+                    settings = settings.settings || settings; // defensive again
+                    // Update relevant fields
+                    settings.email_notifications = emailNotificationsToggle ? emailNotificationsToggle.checked : true;
+                    settings.task_reminders = taskRemindersToggle ? taskRemindersToggle.checked : true;
+                    settings.weekly_reports = weeklyReportsToggle ? weeklyReportsToggle.checked : true;
+                    // Save
+                    await window.updateUserSettings(user.id, settings);
+                    showToast('Preferences saved!', 'success');
+                } catch(err) {
+                    showToast('Could not save preferences. Please try again.', 'danger');
+                } finally {
+                    saveBtn.disabled = false;
+                }
+            }
+
+            // On page load or navigation
+            await loadPreferences();
+            // Wire up save button
+            if (saveBtn) {
+                saveBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    savePreferences();
+                });
+            }
+        });
     </script>
 </body>
 </html>
