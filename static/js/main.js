@@ -995,5 +995,388 @@ function handleTaskClick(event) {
 document.addEventListener('DOMContentLoaded', function() {
     updateNavbar();
     initializeDragAndDrop();
+    
+    // Load task detail page data if on task detail page
+    if (window.location.pathname.includes('/task/')) {
+        const taskId = window.location.pathname.split('/task/')[1];
+        if (taskId) {
+            loadTaskDetailData(taskId);
+        }
+    }
 });
+
+// Task Detail Page Functions
+async function loadTaskDetailData(taskId) {
+    try {
+        await Promise.all([
+            loadSubtasks(taskId),
+            loadComments(taskId),
+            loadHistory(taskId),
+            loadAttachments(taskId)
+        ]);
+    } catch (error) {
+        console.error('Error loading task detail data:', error);
+    }
+}
+
+async function loadSubtasks(taskId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/subtasks`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        
+        if (response.ok) {
+            const subtasks = await response.json();
+            const container = document.getElementById('subtasksList');
+            
+            // Check if container exists (might not be on task detail page)
+            if (!container) {
+                console.log('Subtasks container not found - not on task detail page');
+                return;
+            }
+            
+            if (subtasks.length === 0) {
+                container.innerHTML = '<p class="text-muted">No subtasks yet</p>';
+            } else {
+                container.innerHTML = subtasks.map(subtask => `
+                    <div class="border-bottom pb-2 mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${subtask.title}</strong>
+                                <br><small class="text-muted">${subtask.description}</small>
+                                <br><span class="badge badge-${subtask.priority}">${subtask.priority}</span>
+                            </div>
+                            <div>
+                                <span class="badge bg-${subtask.status === 'completed' ? 'success' : subtask.status === 'in_progress' ? 'warning' : 'secondary'}">${subtask.status}</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load subtasks:', error);
+    }
+}
+
+async function loadComments(taskId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/comments`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        
+        if (response.ok) {
+            const comments = await response.json();
+            const container = document.getElementById('commentsList');
+            
+            // Check if container exists (might not be on task detail page)
+            if (!container) {
+                console.log('Comments container not found - not on task detail page');
+                return;
+            }
+            
+            if (comments.length === 0) {
+                container.innerHTML = '<p class="text-muted">No comments yet</p>';
+            } else {
+                container.innerHTML = comments.map(comment => `
+                    <div class="border-bottom pb-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <strong>${comment.author_username || 'User'}</strong>
+                                <small class="text-muted ms-2">${new Date(comment.created_at).toLocaleString()}</small>
+                                ${comment.edited ? '<small class="text-muted ms-1">(edited)</small>' : ''}
+                                <p class="mt-2 mb-0">${comment.content}</p>
+                            </div>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-secondary" onclick="editComment('${comment.id}')">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="deleteComment('${comment.id}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load comments:', error);
+    }
+}
+
+async function loadHistory(taskId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/history`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        
+        if (response.ok) {
+            const history = await response.json();
+            const container = document.getElementById('historyTimeline');
+            
+            // Check if container exists (might not be on task detail page)
+            if (!container) {
+                console.log('History timeline container not found - not on task detail page');
+                return;
+            }
+            
+            // Check if history is actually an array
+            if (!Array.isArray(history)) {
+                console.error('History response is not an array:', history);
+                container.innerHTML = '<p class="text-muted">Error loading activity history</p>';
+                return;
+            }
+            
+            if (history.length === 0) {
+                container.innerHTML = '<p class="text-muted">No activity history</p>';
+            } else {
+                container.innerHTML = history.map(entry => `
+                    <div class="border-bottom pb-3 mb-3">
+                        <div class="d-flex align-items-start">
+                            <div class="flex-shrink-0 me-3">
+                                <i class="bi bi-circle-fill text-primary" style="font-size: 8px;"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>${entry.field_name.replace('_', ' ').toUpperCase()}</strong>
+                                        <br><small class="text-muted">${new Date(entry.created_at).toLocaleString()}</small>
+                                        <br><small class="text-muted">by ${entry.changed_by_username || 'User'}</small>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    ${entry.old_value ? `<div class="text-danger"><small>From: ${entry.old_value}</small></div>` : ''}
+                                    ${entry.new_value ? `<div class="text-success"><small>To: ${entry.new_value}</small></div>` : ''}
+                                    ${entry.comment ? `<div class="text-muted"><small>Note: ${entry.comment}</small></div>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load history:', error);
+    }
+}
+
+async function loadAttachments(taskId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/attachments`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        
+        if (response.ok) {
+            const attachments = await response.json();
+            const container = document.getElementById('attachmentsList');
+            
+            // Check if container exists (might not be on task detail page)
+            if (!container) {
+                console.log('Attachments container not found - not on task detail page');
+                return;
+            }
+            
+            if (attachments.length === 0) {
+                container.innerHTML = '<p class="text-muted">No attachments</p>';
+            } else {
+                container.innerHTML = attachments.map(attachment => `
+                    <div class="border-bottom pb-2 mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1">
+                                <i class="bi bi-paperclip me-2"></i>
+                                <strong>${attachment.filename}</strong>
+                                <br><small class="text-muted">${(attachment.file_size / 1024).toFixed(1)} KB</small>
+                                ${attachment.description ? `<br><small class="text-muted">${attachment.description}</small>` : ''}
+                            </div>
+                            <div>
+                                <a href="/api/tasks/${taskId}/attachments/${attachment.id}/download" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteAttachment('${attachment.id}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load attachments:', error);
+    }
+}
+
+async function submitComment() {
+    const content = document.getElementById('commentInput').value.trim();
+    if (!content) {
+        showToast('Please enter a comment', 'warning');
+        return;
+    }
+    
+    const taskId = window.location.pathname.split('/task/')[1];
+    if (!taskId) return;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/comments`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ content })
+        });
+        
+        if (response.ok) {
+            document.getElementById('commentInput').value = '';
+            showToast('Comment added successfully!', 'success');
+            await loadComments(taskId);
+        } else {
+            throw new Error('Failed to add comment');
+        }
+    } catch (error) {
+        showToast('Failed to add comment: ' + error.message, 'danger');
+    }
+}
+
+async function uploadAttachment() {
+    const fileInput = document.getElementById('attachmentInput');
+    const file = fileInput.files[0];
+    
+    if (!file) return;
+    
+    const taskId = window.location.pathname.split('/task/')[1];
+    if (!taskId) return;
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/attachments`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+            body: formData
+        });
+        
+        if (response.ok) {
+            fileInput.value = '';
+            showToast('Attachment uploaded successfully!', 'success');
+            await loadAttachments(taskId);
+        } else {
+            throw new Error('Failed to upload attachment');
+        }
+    } catch (error) {
+        showToast('Failed to upload attachment: ' + error.message, 'danger');
+    }
+}
+
+function openCreateSubtaskModal() {
+    // This would open a modal to create a subtask
+    // For now, we'll use a simple prompt
+    const title = prompt('Enter subtask title:');
+    if (!title) return;
+    
+    const description = prompt('Enter subtask description:') || '';
+    
+    createSubtask(title, description);
+}
+
+async function createSubtask(title, description) {
+    const taskId = window.location.pathname.split('/task/')[1];
+    if (!taskId) return;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/tasks`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                title,
+                description,
+                parent_task_id: taskId,
+                priority: 'medium',
+                status: 'todo'
+            })
+        });
+        
+        if (response.ok) {
+            showToast('Subtask created successfully!', 'success');
+            await loadSubtasks(taskId);
+        } else {
+            throw new Error('Failed to create subtask');
+        }
+    } catch (error) {
+        showToast('Failed to create subtask: ' + error.message, 'danger');
+    }
+}
+
+async function editComment(commentId) {
+    const newContent = prompt('Edit comment:');
+    if (!newContent) return;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/comments/${commentId}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ content: newContent })
+        });
+        
+        if (response.ok) {
+            showToast('Comment updated successfully!', 'success');
+            const taskId = window.location.pathname.split('/task/')[1];
+            await loadComments(taskId);
+        } else {
+            throw new Error('Failed to update comment');
+        }
+    } catch (error) {
+        showToast('Failed to update comment: ' + error.message, 'danger');
+    }
+}
+
+async function deleteComment(commentId) {
+    if (!confirm('Are you sure you want to delete this comment?')) return;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/comments/${commentId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        
+        if (response.ok) {
+            showToast('Comment deleted successfully!', 'success');
+            const taskId = window.location.pathname.split('/task/')[1];
+            await loadComments(taskId);
+        } else {
+            throw new Error('Failed to delete comment');
+        }
+    } catch (error) {
+        showToast('Failed to delete comment: ' + error.message, 'danger');
+    }
+}
+
+async function deleteAttachment(attachmentId) {
+    if (!confirm('Are you sure you want to delete this attachment?')) return;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/tasks/attachments/${attachmentId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        
+        if (response.ok) {
+            showToast('Attachment deleted successfully!', 'success');
+            const taskId = window.location.pathname.split('/task/')[1];
+            await loadAttachments(taskId);
+        } else {
+            throw new Error('Failed to delete attachment');
+        }
+    } catch (error) {
+        showToast('Failed to delete attachment: ' + error.message, 'danger');
+    }
+}
 

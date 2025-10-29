@@ -275,7 +275,7 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
-    <script src="/static/js/main.js"></script>
+    <script src="/static/js/main.js?v=2.2"></script>
     
     <script>
         let allTasks = [];
@@ -307,7 +307,31 @@
                 const user = getCurrentUser();
                 if (!user) return;
                 
-                const stats = await getTaskStatistics(user.id);
+                let stats;
+                if (typeof getTaskStatistics === 'function') {
+                    stats = await getTaskStatistics(user.id);
+                } else {
+                    // Fallback implementation
+                    const response = await fetch(`${API_BASE_URL}/tasks/${user.id}/statistics`, {
+                        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+                    });
+                    
+                    if (response.ok) {
+                        stats = await response.json();
+                    } else {
+                        // If statistics endpoint fails, calculate from tasks
+                        const tasks = await getTasks();
+                        stats = {
+                            total: tasks.length,
+                            in_progress: tasks.filter(t => t.status === 'in_progress').length,
+                            completed: tasks.filter(t => t.status === 'completed').length,
+                            overdue: tasks.filter(t => {
+                                if (!t.due_date) return false;
+                                return new Date(t.due_date) < new Date() && t.status !== 'completed';
+                            }).length
+                        };
+                    }
+                }
                 
                 // Update statistics cards
                 document.getElementById('statTotal').textContent = stats.total || 0;
@@ -316,6 +340,11 @@
                 document.getElementById('statOverdue').textContent = stats.overdue || 0;
             } catch (error) {
                 console.error('Failed to load statistics:', error);
+                // Set default values on error
+                document.getElementById('statTotal').textContent = '0';
+                document.getElementById('statInProgress').textContent = '0';
+                document.getElementById('statCompleted').textContent = '0';
+                document.getElementById('statOverdue').textContent = '0';
             }
         }
 

@@ -340,7 +340,7 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
-    <script src="/static/js/main.js"></script>
+    <script src="/static/js/main.js?v=2.2"></script>
     
     <script>
         let currentUser = null;
@@ -384,14 +384,21 @@
         }
 
         function displayProfile(user) {
-            const profileImage = user.profile_image || 'https://via.placeholder.com/150?text=' + user.first_name.charAt(0) + user.last_name.charAt(0);
+            // Create a simple avatar using initials instead of external service
+            const initials = (user.first_name.charAt(0) + user.last_name.charAt(0)).toUpperCase();
+            const profileImage = user.profile_image || `data:image/svg+xml;base64,${btoa(`
+                <svg width="150" height="150" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="150" height="150" fill="#007bff"/>
+                    <text x="75" y="85" font-family="Arial, sans-serif" font-size="48" font-weight="bold" text-anchor="middle" fill="white">${initials}</text>
+                </svg>
+            `)}`;
             
             const html = `
                 <div class="card shadow-sm mb-4">
                     <div class="profile-header text-center">
                         <div class="py-4">
                             <img src="${profileImage}" alt="Profile" class="profile-image mb-3"
-                                 onerror="this.src='https://via.placeholder.com/150?text=${user.first_name.charAt(0)}${user.last_name.charAt(0)}'">
+                                 style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover;">
                             <h2 class="mb-1">${user.first_name} ${user.last_name}</h2>
                             <p class="mb-0 opacity-75">@${user.username}</p>
                         </div>
@@ -777,7 +784,9 @@
 
         function loadUserSettings() {
             // Load settings from localStorage or use defaults
-            const settings = getUserSettings();
+            let settings;
+            // Use local settings function
+            settings = getLocalUserSettings();
             
             // Appearance settings
             document.getElementById('themeSelect').value = settings.theme || 'light';
@@ -798,7 +807,7 @@
             document.getElementById('sessionTimeout').value = settings.sessionTimeout || '60';
         }
 
-        function getUserSettings() {
+        function getLocalUserSettings() {
             const settingsStr = localStorage.getItem('userSettings');
             return settingsStr ? JSON.parse(settingsStr) : {};
         }
@@ -840,7 +849,18 @@
                 };
                 
                 // Save settings to backend
-                await updateUserSettings(currentUser.id, settings);
+                const response = await fetch(`${API_BASE_URL}/users/${currentUser.id}/settings`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settings)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to save settings');
+                }
                 
                 // Also save locally as cache
                 saveUserSettings(settings);
@@ -888,7 +908,7 @@
 
         // Apply saved theme on page load
         document.addEventListener('DOMContentLoaded', function() {
-            const settings = getUserSettings();
+            const settings = getLocalUserSettings();
             if (settings.theme) {
                 applyTheme(settings.theme);
             }

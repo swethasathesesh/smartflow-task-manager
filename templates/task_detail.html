@@ -155,13 +155,57 @@
         </div>
     </div>
 
+    <!-- Create Subtask Modal -->
+    <div class="modal fade" id="createSubtaskModal" tabindex="-1" aria-labelledby="createSubtaskModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createSubtaskModalLabel">
+                        <i class="bi bi-plus-circle"></i> Create Subtask
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createSubtaskForm">
+                        <div class="mb-3">
+                            <label for="subtaskTitle" class="form-label">Title *</label>
+                            <input type="text" class="form-control" id="subtaskTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="subtaskDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="subtaskDescription" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="subtaskPriority" class="form-label">Priority</label>
+                            <select class="form-select" id="subtaskPriority">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="subtaskDueDate" class="form-label">Due Date</label>
+                            <input type="datetime-local" class="form-control" id="subtaskDueDate">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="createSubtask()">
+                        <i class="bi bi-plus"></i> Create Subtask
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Container -->
     <div id="toastContainer"></div>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
-    <script src="/static/js/main.js"></script>
+    <script src="/static/js/main.js?v=2.4"></script>
     
     <script>
         let currentTask = null;
@@ -264,6 +308,74 @@
                                         </div>
                                     </div>
                                 ` : ''}
+                            </div>
+                        </div>
+
+                        <!-- Subtasks Section -->
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="card-title mb-0">
+                                        <i class="bi bi-list-task"></i> Subtasks
+                                    </h5>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="openCreateSubtaskModal()">
+                                        <i class="bi bi-plus"></i> Add Subtask
+                                    </button>
+                                </div>
+                                <div id="subtasksList">
+                                    <!-- Subtasks will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Comments Section -->
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3">
+                                    <i class="bi bi-chat-dots"></i> Comments
+                                </h5>
+                                
+                                <!-- Comment Input -->
+                                <div class="mb-3">
+                                    <textarea class="form-control" id="commentInput" rows="2" placeholder="Add a comment..."></textarea>
+                                    <button class="btn btn-primary btn-sm mt-2" onclick="submitComment()">
+                                        <i class="bi bi-send"></i> Post Comment
+                                    </button>
+                                </div>
+
+                                <div id="commentsList">
+                                    <!-- Comments will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- History Section -->
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3">
+                                    <i class="bi bi-clock-history"></i> Activity History
+                                </h5>
+                                <div id="historyTimeline">
+                                    <!-- History will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Attachments Section -->
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="card-title mb-0">
+                                        <i class="bi bi-paperclip"></i> Attachments
+                                    </h5>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="document.getElementById('attachmentInput').click()">
+                                        <i class="bi bi-upload"></i> Upload
+                                    </button>
+                                </div>
+                                <input type="file" id="attachmentInput" class="d-none" onchange="uploadAttachment()">
+                                <div id="attachmentsList">
+                                    <!-- Attachments will be loaded here -->
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -474,6 +586,296 @@
                 }, 1000);
             } catch (error) {
                 showToast('Failed to delete task: ' + error.message, 'danger');
+            }
+        }
+
+        // Load subtasks, comments, history, and attachments
+        async function loadTaskData() {
+            await Promise.all([
+                loadSubtasks(),
+                loadComments(),
+                loadHistory(),
+                loadAttachments()
+            ]);
+        }
+
+        // Subtasks
+        async function loadSubtasks() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/subtasks`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+                });
+                const subtasks = await response.json();
+                
+                const container = document.getElementById('subtasksList');
+                if (!container) {
+                    console.log('Subtasks container not found');
+                    return;
+                }
+                
+                if (subtasks.length === 0) {
+                    container.innerHTML = '<p class="text-muted">No subtasks yet</p>';
+                } else {
+                    container.innerHTML = subtasks.map(subtask => `
+                        <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                            <div>
+                                <strong>${subtask.title}</strong>
+                                <br><small class="text-muted">${subtask.status}</small>
+                            </div>
+                            <a href="/task/${subtask.id}" class="btn btn-sm btn-outline-primary">
+                                View
+                            </a>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Failed to load subtasks:', error);
+            }
+        }
+
+        async function createSubtask() {
+            const title = document.getElementById('subtaskTitle').value.trim();
+            const description = document.getElementById('subtaskDescription').value.trim();
+            const priority = document.getElementById('subtaskPriority').value;
+            const dueDate = document.getElementById('subtaskDueDate').value;
+            
+            if (!title) {
+                showToast('Please enter a title for the subtask', 'warning');
+                return;
+            }
+            
+            try {
+                // Get current user
+                const user = getCurrentUser();
+                if (!user) {
+                    showToast('Please log in to create subtasks', 'warning');
+                    return;
+                }
+                
+                const subtaskData = {
+                    title: title,
+                    description: description,
+                    priority: priority,
+                    status: 'todo',
+                    parent_task_id: taskId,
+                    due_date: dueDate ? new Date(dueDate).toISOString() : null
+                };
+                
+                console.log('Creating subtask with data:', subtaskData);
+                console.log('User ID:', user.id);
+                console.log('Task ID:', taskId);
+                
+                const response = await fetch(`${API_BASE_URL}/tasks?user_id=${user.id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(subtaskData)
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+                
+                if (response.ok) {
+                    // Close modal and reset form
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('createSubtaskModal'));
+                    modal.hide();
+                    document.getElementById('createSubtaskForm').reset();
+                    
+                    showToast('Subtask created successfully!', 'success');
+                    await loadSubtasks(); // Refresh subtasks list
+                } else {
+                    const errorText = await response.text();
+                    console.error('Error response:', errorText);
+                    const error = JSON.parse(errorText);
+                    throw new Error(error.detail || error.message || 'Failed to create subtask');
+                }
+            } catch (error) {
+                showToast('Failed to create subtask: ' + error.message, 'danger');
+            }
+        }
+
+        // Comments
+        async function loadComments() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/comments`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+                });
+                const comments = await response.json();
+                
+                const container = document.getElementById('commentsList');
+                if (!container) {
+                    console.log('Comments container not found');
+                    return;
+                }
+                
+                if (comments.length === 0) {
+                    container.innerHTML = '<p class="text-muted">No comments yet</p>';
+                } else {
+                    container.innerHTML = comments.map(comment => `
+                        <div class="border-bottom pb-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <strong>${comment.author_username || 'User'}</strong>
+                                    <span class="text-muted ms-2">${formatDate(comment.created_at)}</span>
+                                    ${comment.edited ? '<small class="text-muted">(edited)</small>' : ''}
+                                    <p class="mt-2 mb-0">${comment.content}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Failed to load comments:', error);
+            }
+        }
+
+        async function submitComment() {
+            const content = document.getElementById('commentInput').value.trim();
+            if (!content) return;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ content })
+                });
+
+                if (response.ok) {
+                    document.getElementById('commentInput').value = '';
+                    await loadComments();
+                    showToast('Comment posted!', 'success');
+                } else {
+                    throw new Error('Failed to post comment');
+                }
+            } catch (error) {
+                showToast('Failed to post comment: ' + error.message, 'danger');
+            }
+        }
+
+        // History
+        async function loadHistory() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/history`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+                });
+                const history = await response.json();
+                
+                const container = document.getElementById('historyTimeline');
+                if (!container) {
+                    console.log('History timeline container not found');
+                    return;
+                }
+                
+                if (history.length === 0) {
+                    container.innerHTML = '<p class="text-muted">No history available</p>';
+                } else {
+                    container.innerHTML = history.map(h => `
+                        <div class="d-flex mb-2">
+                            <div class="text-primary me-3">
+                                <i class="bi bi-circle-fill" style="font-size: 0.5rem;"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <small class="text-muted">${formatDate(h.created_at)}</small>
+                                <p class="mb-0">${h.changed_by_username || 'System'} changed ${h.field_name}
+                                    ${h.old_value ? ` from "${h.old_value}"` : ''}
+                                    ${h.new_value ? ` to "${h.new_value}"` : ''}
+                                </p>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Failed to load history:', error);
+            }
+        }
+
+        // Attachments
+        async function loadAttachments() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/attachments`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+                });
+                const attachments = await response.json();
+                
+                const container = document.getElementById('attachmentsList');
+                if (!container) {
+                    console.log('Attachments container not found');
+                    return;
+                }
+                
+                if (attachments.length === 0) {
+                    container.innerHTML = '<p class="text-muted">No attachments yet</p>';
+                } else {
+                    container.innerHTML = attachments.map(att => `
+                        <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                            <div>
+                                <i class="bi bi-file-earmark"></i>
+                                <strong class="ms-2">${att.filename}</strong>
+                                <br><small class="text-muted">${(att.file_size / 1024).toFixed(2)} KB</small>
+                            </div>
+                            <a href="/${att.file_path}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                <i class="bi bi-download"></i> Download
+                            </a>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Failed to load attachments:', error);
+            }
+        }
+
+        async function uploadAttachment() {
+            const input = document.getElementById('attachmentInput');
+            const file = input.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/attachments`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    await loadAttachments();
+                    showToast('Attachment uploaded!', 'success');
+                    input.value = '';
+                } else {
+                    throw new Error('Failed to upload attachment');
+                }
+            } catch (error) {
+                showToast('Failed to upload attachment: ' + error.message, 'danger');
+            }
+        }
+
+        // Update loadTask to also load the new data
+        const originalLoadTask = loadTask;
+        loadTask = async function() {
+            const container = document.getElementById('taskContent');
+            showLoading('taskContent');
+            
+            try {
+                currentTask = await getTask(taskId);
+                displayTask(currentTask);
+                await loadTaskData(); // Load subtasks, comments, history, attachments
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Failed to load task: ${error.message}
+                    </div>
+                `;
             }
         }
     </script>

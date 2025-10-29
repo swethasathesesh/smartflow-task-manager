@@ -192,6 +192,7 @@ class TaskCreate(BaseModel):
     tags: Optional[list[str]] = []
     assigned_to: Optional[str] = None
     notes: Optional[str] = None
+    parent_task_id: Optional[str] = None
 
     class Config:
         json_schema_extra = {
@@ -203,7 +204,8 @@ class TaskCreate(BaseModel):
                 "due_date": "2025-10-20T23:59:59",
                 "start_time": "2025-10-16T09:00:00",
                 "tags": ["documentation", "project"],
-                "notes": "Include API documentation and user guide"
+                "notes": "Include API documentation and user guide",
+                "parent_task_id": None
             }
         }
 
@@ -219,6 +221,7 @@ class TaskUpdate(BaseModel):
     tags: Optional[list[str]] = None
     assigned_to: Optional[str] = None
     notes: Optional[str] = None
+    parent_task_id: Optional[str] = None
 
 
 class TaskResponse(BaseModel):
@@ -236,6 +239,16 @@ class TaskResponse(BaseModel):
     tags: Optional[list[str]] = []
     assigned_to: Optional[str] = None
     notes: Optional[str] = None
+    parent_task_id: Optional[str] = None
+    subtask_count: int = 0
+    is_subtask: bool = False
+    category_id: Optional[str] = None
+    depends_on: Optional[list[str]] = []
+    is_recurring: bool = False
+    recurrence_pattern: Optional[str] = None
+    next_occurrence: Optional[datetime] = None
+    estimated_time: Optional[int] = None
+    actual_time: Optional[int] = None
 
     class Config:
         json_schema_extra = {
@@ -465,6 +478,285 @@ class PasswordChange(BaseModel):
             "example": {
                 "current_password": "oldPassword123",
                 "new_password": "newSecurePassword456"
+            }
+        }
+
+
+# Password Reset Schemas
+class ForgotPasswordRequest(BaseModel):
+    """Request schema for forgot password"""
+    email: EmailStr
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email": "user@example.com"
+            }
+        }
+
+
+class ResetPasswordRequest(BaseModel):
+    """Request schema for reset password"""
+    token: str = Field(..., min_length=32)
+    new_password: str = Field(..., min_length=6)
+    
+    @validator('new_password')
+    def validate_new_password(cls, v):
+        """Password validation for reset password"""
+        password = v.strip()
+        if len(password) < 6:
+            raise ValueError('Password must be at least 6 characters long')
+        return password
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "token": "reset-token-here",
+                "new_password": "newSecurePassword123"
+            }
+        }
+
+
+# Comment Schemas
+class CommentCreate(BaseModel):
+    """Schema for creating a comment"""
+    content: str = Field(..., min_length=1, max_length=5000)
+    parent_comment_id: Optional[str] = None
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "content": "This task looks good!",
+                "parent_comment_id": None
+            }
+        }
+
+
+class CommentUpdate(BaseModel):
+    """Schema for updating a comment"""
+    content: str = Field(..., min_length=1, max_length=5000)
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "content": "Updated comment text"
+            }
+        }
+
+
+class CommentResponse(BaseModel):
+    """Schema for comment response"""
+    id: str
+    task_id: str
+    user_id: str
+    content: str
+    created_at: datetime
+    updated_at: datetime
+    edited: bool
+    parent_comment_id: Optional[str] = None
+    author_username: Optional[str] = None
+    author_first_name: Optional[str] = None
+    author_last_name: Optional[str] = None
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": "comment123",
+                "task_id": "task123",
+                "user_id": "user123",
+                "content": "Great progress!",
+                "created_at": "2025-01-20T10:00:00",
+                "updated_at": "2025-01-20T10:00:00",
+                "edited": False,
+                "parent_comment_id": None
+            }
+        }
+
+
+# Task History Schemas
+class TaskHistoryResponse(BaseModel):
+    """Schema for task history response"""
+    id: str
+    task_id: str
+    user_id: str
+    field_name: str
+    old_value: Optional[str] = None
+    new_value: Optional[str] = None
+    changed_by: str
+    created_at: datetime
+    comment: Optional[str] = None
+    changed_by_username: Optional[str] = None
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": "history123",
+                "task_id": "task123",
+                "user_id": "user123",
+                "field_name": "status",
+                "old_value": "todo",
+                "new_value": "in_progress",
+                "changed_by": "user123",
+                "created_at": "2025-01-20T10:00:00",
+                "comment": "Started working on this task"
+            }
+        }
+
+
+# Settings History Schemas
+class SettingsHistoryResponse(BaseModel):
+    """Schema for settings history response"""
+    id: str
+    user_id: str
+    settings: dict
+    changed_by: str
+    created_at: datetime
+    change_reason: Optional[str] = None
+    changed_by_username: Optional[str] = None
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": "history123",
+                "user_id": "user123",
+                "settings": {"theme": "dark", "email_notifications": True},
+                "changed_by": "user123",
+                "created_at": "2025-01-20T10:00:00",
+                "change_reason": "Switched to dark mode",
+                "changed_by_username": "johndoe"
+            }
+        }
+
+
+class SettingsRollbackRequest(BaseModel):
+    """Schema for rolling back to previous settings"""
+    history_id: str
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "history_id": "history123"
+            }
+        }
+
+
+# Task Attachment Schemas
+class TaskAttachmentResponse(BaseModel):
+    """Schema for task attachment response"""
+    id: str
+    task_id: str
+    user_id: str
+    filename: str
+    file_path: str
+    file_size: int
+    file_type: str
+    uploaded_at: datetime
+    description: Optional[str] = None
+    uploader_username: Optional[str] = None
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": "attach123",
+                "task_id": "task123",
+                "user_id": "user123",
+                "filename": "document.pdf",
+                "file_path": "/uploads/tasks/document.pdf",
+                "file_size": 102400,
+                "file_type": "application/pdf",
+                "uploaded_at": "2025-01-20T10:00:00",
+                "description": "Project documentation"
+            }
+        }
+
+
+# Task Template Schemas
+class TaskTemplateCreate(BaseModel):
+    """Schema for creating a task template"""
+    name: str = Field(..., min_length=1, max_length=100)
+    title: str = Field(..., min_length=1, max_length=200)
+    description: str = Field(..., min_length=1)
+    default_priority: TaskPriority = TaskPriority.MEDIUM
+    default_tags: Optional[list[str]] = []
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "Bug Report",
+                "title": "Report Bug",
+                "description": "Report a bug with steps to reproduce",
+                "default_priority": "high",
+                "default_tags": ["bug", "urgent"]
+            }
+        }
+
+
+class TaskTemplateResponse(BaseModel):
+    """Schema for task template response"""
+    id: str
+    user_id: str
+    name: str
+    title: str
+    description: str
+    default_priority: TaskPriority
+    default_tags: Optional[list[str]] = []
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": "template123",
+                "user_id": "user123",
+                "name": "Bug Report",
+                "title": "Report Bug",
+                "description": "Report a bug with steps to reproduce",
+                "default_priority": "high",
+                "default_tags": ["bug", "urgent"]
+            }
+        }
+
+
+# Category Schemas
+class CategoryCreate(BaseModel):
+    """Schema for creating a category"""
+    name: str = Field(..., min_length=1, max_length=100)
+    description: Optional[str] = None
+    color: Optional[str] = "#007bff"
+    icon: Optional[str] = None
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "Work",
+                "description": "Work related tasks",
+                "color": "#007bff",
+                "icon": "briefcase"
+            }
+        }
+
+
+class CategoryResponse(BaseModel):
+    """Schema for category response"""
+    id: str
+    user_id: str
+    name: str
+    description: Optional[str] = None
+    color: Optional[str] = None
+    icon: Optional[str] = None
+    created_at: datetime
+    task_count: int
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": "category123",
+                "user_id": "user123",
+                "name": "Work",
+                "description": "Work related tasks",
+                "color": "#007bff",
+                "icon": "briefcase",
+                "task_count": 5
             }
         }
 

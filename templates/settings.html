@@ -139,6 +139,21 @@
             </div>
         </div>
 
+        <!-- Settings History Section -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card settings-section">
+                    <div class="card-body">
+                        <h4><i class="bi bi-clock-history me-2"></i>Settings History</h4>
+                        <p class="text-muted">View and restore previous settings versions</p>
+                        <div id="settingsHistoryList">
+                            <p class="text-muted">Loading history...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Additional Settings Sections -->
         <div class="row mt-4">
             <div class="col-md-6">
@@ -369,7 +384,79 @@
                     savePreferences();
                 });
             }
+
+            // Load settings history
+            await loadSettingsHistory();
         });
+
+        async function loadSettingsHistory() {
+            try {
+                const userObj = localStorage.getItem('user');
+                const user = userObj ? JSON.parse(userObj) : null;
+                if (!user || !user.id) return;
+
+                const response = await fetch(`${API_BASE_URL}/users/${user.id}/settings/history`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+                });
+
+                if (response.ok) {
+                    const history = await response.json();
+                    const container = document.getElementById('settingsHistoryList');
+                    
+                    if (history.length === 0) {
+                        container.innerHTML = '<p class="text-muted">No settings history available</p>';
+                    } else {
+                        container.innerHTML = history.map((entry, index) => `
+                            <div class="border-bottom pb-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <strong>Settings Version ${history.length - index}</strong>
+                                        <br><small class="text-muted">${new Date(entry.created_at).toLocaleString()}</small>
+                                        ${entry.change_reason ? `<br><small class="text-muted">${entry.change_reason}</small>` : ''}
+                                    </div>
+                                    ${index > 0 ? `
+                                        <button class="btn btn-sm btn-outline-primary" onclick="rollbackSettings('${entry.id}')">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Restore
+                                        </button>
+                                    ` : '<small class="text-success">Current</small>'}
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load settings history:', error);
+            }
+        }
+
+        async function rollbackSettings(historyId) {
+            try {
+                const userObj = localStorage.getItem('user');
+                const user = userObj ? JSON.parse(userObj) : null;
+                if (!user || !user.id) return;
+
+                if (!confirm('Are you sure you want to restore these settings?')) return;
+
+                const response = await fetch(`${API_BASE_URL}/users/${user.id}/settings/rollback`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ history_id: historyId })
+                });
+
+                if (response.ok) {
+                    showToast('Settings restored successfully!', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    throw new Error('Failed to restore settings');
+                }
+            } catch (error) {
+                showToast('Failed to restore settings: ' + error.message, 'danger');
+            }
+        }
     </script>
 </body>
 </html>
