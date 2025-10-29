@@ -507,8 +507,8 @@
                     const response = await register(userData, otp);
                     
                     // Store the user data and token
-                    setAuthData(response.access_token, response.user);
-                    
+                    setAuthData(response.access_token, response.refresh_token, response.user);
+                    updateNavbar();
                     // Show success message and redirect
                     showToast('Registration successful! Redirecting to dashboard...', 'success');
                     setTimeout(() => {

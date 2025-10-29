@@ -9,10 +9,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Database configuration from environment variables with fallbacks
-MONGODB_PASSWORD = os.getenv("MONGODB_PASSWORD", "uiet huer ofgh igfh")
-MONGODB_USERNAME = os.getenv("MONGODB_USERNAME", "sarathmrtvm")
-MONGODB_CLUSTER = os.getenv("MONGODB_CLUSTER", "cluster0.gg6brmy.mongodb.net")
-DATABASE_NAME = os.getenv("DATABASE_NAME", "task_manager-pro")
+MONGODB_PASSWORD = os.getenv("MONGODB_PASSWORD")
+MONGODB_USERNAME = os.getenv("MONGODB_USERNAME")
+MONGODB_CLUSTER = os.getenv("MONGODB_CLUSTER")
+DATABASE_NAME = os.getenv("DATABASE_NAME")
 
 print(f"Connecting to MongoDB as user: {MONGODB_USERNAME}")
 
