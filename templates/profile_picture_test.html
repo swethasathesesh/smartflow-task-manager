@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Picture Upload Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .profile-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .profile-image {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #ddd;
+            margin-bottom: 20px;
+        }
+        .thumbnail {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #ddd;
+            margin: 0 10px;
+        }
+        .upload-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .file-input {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .btn {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .user-id-section {
+            margin-bottom: 20px;
+        }
+        .user-id-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Profile Picture Upload Test</h1>
+        
+        <!-- User ID Input -->
+        <div class="user-id-section">
+            <label for="userId">User ID (MongoDB ObjectId):</label>
+            <input type="text" id="userId" class="user-id-input" placeholder="Enter user ID (e.g., 507f1f77bcf86cd799439011)">
+            <button onclick="loadUserProfile()" class="btn">Load User Profile</button>
+        </div>
+
+        <!-- Profile Display Section -->
+        <div class="profile-section">
+            <h2>Current Profile Picture</h2>
+            <img id="profileImage" src="/static/css/default-avatar.png" alt="Profile Picture" class="profile-image" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgNTBDODYuMTkzIDUwIDc1IDYxLjE5MyA3NSA3NVM4Ni4xOTMgMTAwIDEwMCAxMDBTMTI1IDg4LjgwNyAxMjUgNzVTMTEzLjgwNyA1MCAxMDAgNTBaIiBmaWxsPSIjOUM5Qzk5Ii8+CjxwYXRoIGQ9Ik0xMDAgMTEwQzc3LjkwODYgMTEwIDYwIDEyNy45MDkgNjAgMTUwVjE3MEg3MFYxNTBDNzAgMTMzLjQzMSA4My40MzE0IDEyMCAxMDAgMTIwUzEzMCAxMzMuNDMxIDEzMCAxNTBWMTcwSDE0MFYxNTBDMTQwIDEyNy45MDkgMTIyLjA5MSAxMTAgMTAwIDExMFoiIGZpbGw9IiM5QzlDOTkiLz4KPC9zdmc+'">
+            
+            <div>
+                <strong>Thumbnail:</strong>
+                <img id="thumbnailImage" src="/static/css/default-avatar.png" alt="Thumbnail" class="thumbnail" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjYwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0zMCAxNUMyNS44NTc5IDE1IDIyLjUgMTguMzU3OSAyMi41IDIyLjVTMjUuODU3OSAzMCAzMCAzMFMzNy41IDI2LjY0MjEgMzcuNSAyMi41UzM0LjE0MjEgMTUgMzAgMTVaIiBmaWxsPSIjOUM5Qzk5Ii8+CjxwYXRoIGQ9Ik0zMCAzM0MyMy4zNzI2IDMzIDE4IDM4LjM3MjYgMTggNDVWNTFIMjFWNDVDMjEgNDAuMDI5NCAyNS4wMjk0IDM2IDMwIDM2UzM5IDQwLjAyOTQgMzkgNDVWNTFINDJWNDVDNDIgMzguMzcyNiAzNi42Mjc0IDMzIDMwIDMzWiIgZmlsbD0iIzlDOUM5OSIvPgo8L3N2Zz4='">
+            </div>
+            
+            <div id="profileStatus" class="status" style="display: none;"></div>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="upload-section">
+            <h3>Upload New Profile Picture</h3>
+            <input type="file" id="fileInput" accept="image/*" class="file-input">
+            <br>
+            <button onclick="uploadProfilePicture()" class="btn">Upload Picture</button>
+            <button onclick="deleteProfilePicture()" class="btn btn-danger">Delete Picture</button>
+            
+            <div id="uploadStatus" class="status" style="display: none;"></div>
+        </div>
+
+        <!-- API Testing Section -->
+        <div class="upload-section">
+            <h3>API Testing</h3>
+            <button onclick="testGetProfile()" class="btn">Test Get Profile</button>
+            <button onclick="testGetProfilePicture()" class="btn">Test Get Profile Picture</button>
+            
+            <div id="apiStatus" class="status" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentUserId = '';
+
+        function showStatus(elementId, message, isError = false) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${isError ? 'error' : 'success'}`;
+            element.style.display = 'block';
+            
+            // Hide after 5 seconds
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, 5000);
+        }
+
+        function getCurrentUserId() {
+            const userId = document.getElementById('userId').value.trim();
+            if (!userId) {
+                showStatus('profileStatus', 'Please enter a User ID first', true);
+                return null;
+            }
+            return userId;
+        }
+
+        async function loadUserProfile() {
+            const userId = getCurrentUserId();
+            if (!userId) return;
+
+            currentUserId = userId;
+            
+            try {
+                const response = await fetch(`/api/users/${userId}`);
+                const user = await response.json();
+                
+                if (response.ok) {
+                    // Update profile image
+                    if (user.profile_image) {
+                        document.getElementById('profileImage').src = user.profile_image;
+                    }
+                    if (user.profile_thumbnail) {
+                        document.getElementById('thumbnailImage').src = user.profile_thumbnail;
+                    }
+                    
+                    showStatus('profileStatus', `Loaded profile for ${user.first_name} ${user.last_name}`);
+                } else {
+                    showStatus('profileStatus', `Error: ${user.detail}`, true);
+                }
+            } catch (error) {
+                showStatus('profileStatus', `Error loading profile: ${error.message}`, true);
+            }
+        }
+
+        async function uploadProfilePicture() {
+            const userId = getCurrentUserId();
+            if (!userId) return;
+
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showStatus('uploadStatus', 'Please select a file first', true);
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                showStatus('uploadStatus', 'Uploading...');
+                
+                const response = await fetch(`/api/users/${userId}/upload-profile-picture`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    // Update images
+                    document.getElementById('profileImage').src = result.file_path + '?t=' + Date.now();
+                    document.getElementById('thumbnailImage').src = result.thumbnail_path + '?t=' + Date.now();
+                    
+                    showStatus('uploadStatus', 'Profile picture uploaded successfully!');
+                    
+                    // Clear file input
+                    fileInput.value = '';
+                } else {
+                    showStatus('uploadStatus', `Upload failed: ${result.message || result.detail}`, true);
+                }
+            } catch (error) {
+                showStatus('uploadStatus', `Upload error: ${error.message}`, true);
+            }
+        }
+
+        async function deleteProfilePicture() {
+            const userId = getCurrentUserId();
+            if (!userId) return;
+
+            if (!confirm('Are you sure you want to delete the profile picture?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/users/${userId}/profile-picture`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Reset to default images
+                    document.getElementById('profileImage').src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgNTBDODYuMTkzIDUwIDc1IDYxLjE5MyA3NSA3NVM4Ni4xOTMgMTAwIDEwMCAxMDBTMTI1IDg4LjgwNyAxMjUgNzVTMTEzLjgwNyA1MCAxMDAgNTBaIiBmaWxsPSIjOUM5Qzk5Ii8+CjxwYXRoIGQ9Ik0xMDAgMTEwQzc3LjkwODYgMTEwIDYwIDEyNy45MDkgNjAgMTUwVjE3MEg3MFYxNTBDNzAgMTMzLjQzMSA4My40MzE0IDEyMCAxMDAgMTIwUzEzMCAxMzMuNDMxIDEzMCAxNTBWMTcwSDE0MFYxNTBDMTQwIDEyNy45MDkgMTIyLjA5MSAxMTAgMTAwIDExMFoiIGZpbGw9IiM5QzlDOTkiLz4KPC9zdmc+';
+                    document.getElementById('thumbnailImage').src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjYwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0zMCAxNUMyNS44NTc5IDE1IDIyLjUgMTguMzU3OSAyMi41IDIyLjVTMjUuODU3OSAzMCAzMCAzMFMzNy41IDI2LjY0MjEgMzcuNSAyMi41UzM0LjE0MjEgMTUgMzAgMTVaIiBmaWxsPSIjOUM5Qzk5Ii8+CjxwYXRoIGQ9Ik0zMCAzM0MyMy4zNzI2IDMzIDE4IDM4LjM3MjYgMTggNDVWNTFIMjFWNDVDMjEgNDAuMDI5NCAyNS4wMjk0IDM2IDMwIDM2UzM5IDQwLjAyOTQgMzkgNDVWNTFINDJWNDVDNDIgMzguMzcyNiAzNi42Mjc0IDMzIDMwIDMzWiIgZmlsbD0iIzlDOUM5OSIvPgo8L3N2Zz4=';
+                    
+                    showStatus('uploadStatus', 'Profile picture deleted successfully!');
+                } else {
+                    showStatus('uploadStatus', `Delete failed: ${result.detail}`, true);
+                }
+            } catch (error) {
+                showStatus('uploadStatus', `Delete error: ${error.message}`, true);
+            }
+        }
+
+        async function testGetProfile() {
+            const userId = getCurrentUserId();
+            if (!userId) return;
+
+            try {
+                const response = await fetch(`/api/users/${userId}`);
+                const result = await response.json();
+                
+                document.getElementById('apiStatus').innerHTML = `
+                    <strong>GET /api/users/${userId}</strong><br>
+                    Status: ${response.status}<br>
+                    Response: <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+                document.getElementById('apiStatus').className = 'status success';
+                document.getElementById('apiStatus').style.display = 'block';
+            } catch (error) {
+                showStatus('apiStatus', `API Error: ${error.message}`, true);
+            }
+        }
+
+        async function testGetProfilePicture() {
+            const userId = getCurrentUserId();
+            if (!userId) return;
+
+            try {
+                const response = await fetch(`/api/users/${userId}/profile-picture`);
+                const result = await response.json();
+                
+                document.getElementById('apiStatus').innerHTML = `
+                    <strong>GET /api/users/${userId}/profile-picture</strong><br>
+                    Status: ${response.status}<br>
+                    Response: <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+                document.getElementById('apiStatus').className = 'status success';
+                document.getElementById('apiStatus').style.display = 'block';
+            } catch (error) {
+                showStatus('apiStatus', `API Error: ${error.message}`, true);
+            }
+        }
+
+        // File input change handler for preview
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Validate file type
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                if (!allowedTypes.includes(file.type)) {
+                    showStatus('uploadStatus', 'Invalid file type. Please select a valid image file.', true);
+                    e.target.value = '';
+                    return;
+                }
+                
+                // Validate file size (5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    showStatus('uploadStatus', 'File too large. Maximum size is 5MB.', true);
+                    e.target.value = '';
+                    return;
+                }
+                
+                showStatus('uploadStatus', `Selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Task Management Pro</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-check-circle-fill"></i> Task Management Pro
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-lg-center" id="navbarUser">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/login">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-primary ms-lg-2 mt-2 mt-lg-0" href="/register">Get Started</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Profile Content -->
+    <div class="container py-4">
+        <div class="row mb-3">
+            <div class="col">
+                <a href="/dashboard" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+
+        <div id="profileContent">
+            <!-- Profile details will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div class="modal fade" id="editProfileModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-pencil"></i> Edit Profile
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editProfileForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="editFirstName" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="editFirstName">
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="editLastName" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="editLastName">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="editPhoneNumber" class="form-label">Phone Number</label>
+                            <input type="tel" class="form-control" id="editPhoneNumber">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="editBio" class="form-label">Bio</label>
+                            <textarea class="form-control" id="editBio" rows="4" 
+                                      placeholder="Tell us about yourself..."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Profile Picture</label>
+                            <div>
+                                <label for="editProfileImageFile" class="form-label">Upload from File</label>
+                                <input type="file" class="form-control" id="editProfileImageFile" 
+                                       accept="image/*" onchange="previewImage(this)">
+                                <div class="form-text">Choose an image file from your computer</div>
+                            </div>
+                            <div class="mt-3" id="imagePreview" style="display: none;">
+                                <label class="form-label">Preview:</label>
+                                <div>
+                                    <img id="previewImg" src="" alt="Preview" style="max-width: 150px; max-height: 150px; border-radius: 50%; object-fit: cover;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="editProfileError" class="alert alert-danger d-none"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitEditProfile()">
+                        <i class="bi bi-check-circle"></i> Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div class="modal fade" id="changePasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-shield-lock"></i> Change Password
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="changePasswordForm">
+                        <div class="mb-3">
+                            <label for="currentPassword" class="form-label">Current Password</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="currentPassword" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('currentPassword', this)">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">New Password</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="newPassword" required minlength="6">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('newPassword', this)">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">Password must be at least 6 characters long</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="confirmNewPassword" class="form-label">Confirm New Password</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="confirmNewPassword" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('confirmNewPassword', this)">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>Password Requirements:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>At least 6 characters long</li>
+                                    <li>Mix of letters and numbers recommended</li>
+                                    <li>Avoid using personal information</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div id="changePasswordError" class="alert alert-danger d-none"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitChangePassword()">
+                        <i class="bi bi-check-circle"></i> Change Password
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings/Preferences Modal -->
+    <div class="modal fade" id="settingsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-gear"></i> Settings & Preferences
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Appearance Settings -->
+                        <div class="col-12 mb-4">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-palette"></i> Appearance
+                            </h6>
+                            <div class="card bg-light border-0">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="themeSelect" class="form-label">Theme</label>
+                                            <select class="form-select" id="themeSelect">
+                                                <option value="light">Light</option>
+                                                <option value="dark">Dark</option>
+                                                <option value="auto">Auto (System)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notification Settings -->
+                        <div class="col-12 mb-4">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-bell"></i> Notifications
+                            </h6>
+                            <div class="card bg-light border-0">
+                                <div class="card-body">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                                        <label class="form-check-label" for="emailNotifications">
+                                            Email Notifications
+                                        </label>
+                                        <div class="form-text">Receive email notifications for task updates</div>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="pushNotifications" checked>
+                                        <label class="form-check-label" for="pushNotifications">
+                                            Push Notifications
+                                        </label>
+                                        <div class="form-text">Receive browser push notifications</div>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="taskReminders" checked>
+                                        <label class="form-check-label" for="taskReminders">
+                                            Task Reminders
+                                        </label>
+                                        <div class="form-text">Get reminders for upcoming due dates</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Task Settings -->
+                        <div class="col-12 mb-4">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-list-task"></i> Task Management
+                            </h6>
+                            <div class="card bg-light border-0">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="tasksPerPage" class="form-label">Tasks per Page</label>
+                                            <select class="form-select" id="tasksPerPage">
+                                                <option value="10">10</option>
+                                                <option value="25" selected>25</option>
+                                                <option value="50">50</option>
+                                                <option value="100">100</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="autoSave" checked>
+                                        <label class="form-check-label" for="autoSave">
+                                            Auto-save Task Changes
+                                        </label>
+                                        <div class="form-text">Automatically save changes as you type</div>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="showCompletedTasks">
+                                        <label class="form-check-label" for="showCompletedTasks">
+                                            Show Completed Tasks by Default
+                                        </label>
+                                        <div class="form-text">Display completed tasks in the main view</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Privacy Settings -->
+                        <div class="col-12 mb-4">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-shield-check"></i> Privacy & Security
+                            </h6>
+                            <div class="card bg-light border-0">
+                                <div class="card-body">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="profileVisibility" checked>
+                                        <label class="form-check-label" for="profileVisibility">
+                                            Public Profile
+                                        </label>
+                                        <div class="form-text">Allow others to view your profile</div>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="activityTracking">
+                                        <label class="form-check-label" for="activityTracking">
+                                            Activity Tracking
+                                        </label>
+                                        <div class="form-text">Track your activity for analytics</div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="sessionTimeout" class="form-label">Session Timeout</label>
+                                            <select class="form-select" id="sessionTimeout">
+                                                <option value="30">30 minutes</option>
+                                                <option value="60" selected>1 hour</option>
+                                                <option value="240">4 hours</option>
+                                                <option value="480">8 hours</option>
+                                                <option value="never">Never</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div id="settingsError" class="alert alert-danger d-none"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="saveSettings()">
+                        <i class="bi bi-check-circle"></i> Save Preferences
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="/static/js/main.js?v=2.2"></script>
+    
+    <script>
+        let currentUser = null;
+
+        // Check authentication
+        if (!requireAuth()) {
+            // Will redirect to login
+        }
+
+        // Load profile on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Update navbar with user info
+            updateNavbar();
+            await loadProfile();
+        });
+
+        async function loadProfile() {
+            const container = document.getElementById('profileContent');
+            showLoading('profileContent');
+            
+            const user = getCurrentUser();
+            if (!user) {
+                container.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Failed to load profile. Please login again.
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                currentUser = await getUser(user.id);
+                displayProfile(currentUser);
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Failed to load profile: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function displayProfile(user) {
+            // Create a simple avatar using initials instead of external service
+            const initials = (user.first_name.charAt(0) + user.last_name.charAt(0)).toUpperCase();
+            const profileImage = user.profile_image || `data:image/svg+xml;base64,${btoa(`
+                <svg width="150" height="150" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="150" height="150" fill="#007bff"/>
+                    <text x="75" y="85" font-family="Arial, sans-serif" font-size="48" font-weight="bold" text-anchor="middle" fill="white">${initials}</text>
+                </svg>
+            `)}`;
+            
+            const html = `
+                <div class="card shadow-sm mb-4">
+                    <div class="profile-header text-center">
+                        <div class="py-4">
+                            <img src="${profileImage}" alt="Profile" class="profile-image mb-3"
+                                 style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover;">
+                            <h2 class="mb-1">${user.first_name} ${user.last_name}</h2>
+                            <p class="mb-0 opacity-75">@${user.username}</p>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="mb-0">
+                                <i class="bi bi-person-circle"></i> Profile Information
+                            </h4>
+                            <div>
+                                <button class="btn btn-primary" onclick="openEditModal()">
+                                    <i class="bi bi-pencil"></i> Edit Profile
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body">
+                                        <small class="text-muted d-block mb-2">
+                                            <i class="bi bi-person"></i> First Name
+                                        </small>
+                                        <h5 class="mb-0">${user.first_name}</h5>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body">
+                                        <small class="text-muted d-block mb-2">
+                                            <i class="bi bi-person"></i> Last Name
+                                        </small>
+                                        <h5 class="mb-0">${user.last_name}</h5>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body">
+                                        <small class="text-muted d-block mb-2">
+                                            <i class="bi bi-at"></i> Username
+                                        </small>
+                                        <h5 class="mb-0">@${user.username}</h5>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body">
+                                        <small class="text-muted d-block mb-2">
+                                            <i class="bi bi-envelope"></i> Email
+                                        </small>
+                                        <h5 class="mb-0">${user.email}</h5>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body">
+                                        <small class="text-muted d-block mb-2">
+                                            <i class="bi bi-telephone"></i> Phone Number
+                                        </small>
+                                        <h5 class="mb-0">${user.phone_number}</h5>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body">
+                                        <small class="text-muted d-block mb-2">
+                                            <i class="bi bi-calendar-check"></i> Member Since
+                                        </small>
+                                        <h5 class="mb-0">${formatDate(user.created_at)}</h5>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${user.bio ? `
+                            <div class="card bg-light border-0 mb-4">
+                                <div class="card-body">
+                                    <small class="text-muted d-block mb-2">
+                                        <i class="bi bi-journal-text"></i> Bio
+                                    </small>
+                                    <p class="mb-0">${user.bio}</p>
+                                </div>
+                            </div>
+                        ` : `
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> You haven't added a bio yet. Click "Edit Profile" to add one!
+                            </div>
+                        `}
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="card shadow-sm text-center h-100">
+                            <div class="card-body">
+                                <div class="display-4 text-primary mb-3">
+                                    <i class="bi bi-list-check"></i>
+                                </div>
+                                <h5 class="card-title">Your Tasks</h5>
+                                <p class="text-muted">View and manage all your tasks</p>
+                                <a href="/dashboard" class="btn btn-primary">
+                                    Go to Dashboard
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card shadow-sm text-center h-100">
+                            <div class="card-body">
+                                <div class="display-4 text-success mb-3">
+                                    <i class="bi bi-shield-check"></i>
+                                </div>
+                                <h5 class="card-title">Account Security</h5>
+                                <p class="text-muted">Your account is secure</p>
+                                <button class="btn btn-outline-primary" onclick="openChangePasswordModal()">
+                                    <i class="bi bi-shield-lock"></i> Change Password
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card shadow-sm text-center h-100">
+                            <div class="card-body">
+                                <div class="display-4 text-info mb-3">
+                                    <i class="bi bi-gear"></i>
+                                </div>
+                                <h5 class="card-title">Settings</h5>
+                                <p class="text-muted">Customize your experience</p>
+                                <button class="btn btn-outline-info" onclick="openSettingsModal()">
+                                    <i class="bi bi-gear"></i> Preferences
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('profileContent').innerHTML = html;
+        }
+
+        function openEditModal() {
+            if (!currentUser) return;
+            
+            document.getElementById('editFirstName').value = currentUser.first_name;
+            document.getElementById('editLastName').value = currentUser.last_name;
+            document.getElementById('editPhoneNumber').value = currentUser.phone_number;
+            document.getElementById('editBio').value = currentUser.bio || '';
+            
+            // Reset file input and preview
+            document.getElementById('editProfileImageFile').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+            
+            const modal = new bootstrap.Modal(document.getElementById('editProfileModal'));
+            modal.show();
+        }
+
+        function previewImage(input) {
+            const preview = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImg');
+            
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                
+                reader.readAsDataURL(input.files[0]);
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+
+        async function submitEditProfile() {
+            const firstName = document.getElementById('editFirstName').value;
+            const lastName = document.getElementById('editLastName').value;
+            const phoneNumber = document.getElementById('editPhoneNumber').value;
+            const bio = document.getElementById('editBio').value;
+            const profileImageFile = document.getElementById('editProfileImageFile').files[0];
+            
+            const userData = {};
+            let hasChanges = false;
+            
+            if (firstName && firstName !== currentUser.first_name) {
+                userData.first_name = firstName;
+                hasChanges = true;
+            }
+            if (lastName && lastName !== currentUser.last_name) {
+                userData.last_name = lastName;
+                hasChanges = true;
+            }
+            if (phoneNumber && phoneNumber !== currentUser.phone_number) {
+                userData.phone_number = phoneNumber;
+                hasChanges = true;
+            }
+            if (bio !== currentUser.bio) {
+                userData.bio = bio || null;
+                hasChanges = true;
+            }
+            
+            // Check if file is selected
+            if (profileImageFile) {
+                hasChanges = true;
+            }
+            
+            if (!hasChanges) {
+                showToast('No changes to save', 'info');
+                return;
+            }
+            
+            try {
+                // Show loading state
+                const submitBtn = document.querySelector('#editProfileModal .btn-primary');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+                
+                let updatedUser;
+                
+                // Handle file upload first if file is selected
+                if (profileImageFile) {
+                    console.log('Uploading profile picture...');
+                    const uploadResult = await uploadProfilePicture(currentUser.id, profileImageFile);
+                    console.log('Upload result:', uploadResult);
+                    
+                    // Update user data with new profile image path
+                    userData.profile_image = uploadResult.file_path;
+                }
+                
+                // Update other profile data if there are changes
+                if (Object.keys(userData).length > 0) {
+                    updatedUser = await updateUser(currentUser.id, userData);
+                } else {
+                    // If only file was uploaded, get fresh user data
+                    updatedUser = await getUser(currentUser.id);
+                }
+                
+                // Update local storage
+                const user = getCurrentUser();
+                const mergedUser = { ...user, ...updatedUser };
+                localStorage.setItem('user', JSON.stringify(mergedUser));
+                
+                showToast('Profile updated successfully!', 'success');
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editProfileModal'));
+                modal.hide();
+                
+                // Reload profile
+                await loadProfile();
+                
+            } catch (error) {
+                console.error('Profile update error:', error);
+                const errorDiv = document.getElementById('editProfileError');
+                errorDiv.textContent = 'Failed to update profile: ' + error.message;
+                errorDiv.classList.remove('d-none');
+            } finally {
+                // Reset button state
+                const submitBtn = document.querySelector('#editProfileModal .btn-primary');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Save Changes';
+            }
+        }
+
+
+        function openChangePasswordModal() {
+            // Reset form
+            document.getElementById('changePasswordForm').reset();
+            document.getElementById('changePasswordError').classList.add('d-none');
+            
+            // Reset password visibility
+            const passwordInputs = ['currentPassword', 'newPassword', 'confirmNewPassword'];
+            passwordInputs.forEach(id => {
+                const input = document.getElementById(id);
+                const button = input.nextElementSibling;
+                input.type = 'password';
+                button.innerHTML = '<i class="bi bi-eye"></i>';
+            });
+            
+            const modal = new bootstrap.Modal(document.getElementById('changePasswordModal'));
+            modal.show();
+        }
+
+        function togglePasswordVisibility(inputId, button) {
+            const input = document.getElementById(inputId);
+            const icon = button.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'bi bi-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'bi bi-eye';
+            }
+        }
+
+        async function submitChangePassword() {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+            const errorDiv = document.getElementById('changePasswordError');
+            
+            // Reset error state
+            errorDiv.classList.add('d-none');
+            
+            // Validate form
+            if (!currentPassword || !newPassword || !confirmNewPassword) {
+                errorDiv.textContent = 'All fields are required';
+                errorDiv.classList.remove('d-none');
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                errorDiv.textContent = 'New password must be at least 6 characters long';
+                errorDiv.classList.remove('d-none');
+                return;
+            }
+            
+            if (newPassword !== confirmNewPassword) {
+                errorDiv.textContent = 'New passwords do not match';
+                errorDiv.classList.remove('d-none');
+                return;
+            }
+            
+            if (currentPassword === newPassword) {
+                errorDiv.textContent = 'New password must be different from current password';
+                errorDiv.classList.remove('d-none');
+                return;
+            }
+            
+            try {
+                // Show loading state
+                const submitBtn = document.querySelector('#changePasswordModal .btn-primary');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Changing...';
+                
+                // Call change password API
+                await changePassword(currentUser.id, currentPassword, newPassword);
+                
+                showToast('Password changed successfully!', 'success');
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('changePasswordModal'));
+                modal.hide();
+                
+                // Reset form
+                document.getElementById('changePasswordForm').reset();
+                
+            } catch (error) {
+                console.error('Password change error:', error);
+                errorDiv.textContent = 'Failed to change password: ' + error.message;
+                errorDiv.classList.remove('d-none');
+            } finally {
+                // Reset button state
+                const submitBtn = document.querySelector('#changePasswordModal .btn-primary');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Change Password';
+            }
+        }
+
+        // Settings/Preferences Functions
+        function openSettingsModal() {
+            // Load current settings
+            loadUserSettings();
+            
+            const modal = new bootstrap.Modal(document.getElementById('settingsModal'));
+            modal.show();
+        }
+
+        function loadUserSettings() {
+            // Load settings from localStorage or use defaults
+            let settings;
+            // Use local settings function
+            settings = getLocalUserSettings();
+            
+            // Appearance settings
+            document.getElementById('themeSelect').value = settings.theme || 'light';
+            
+            // Notification settings
+            document.getElementById('emailNotifications').checked = settings.emailNotifications !== false;
+            document.getElementById('pushNotifications').checked = settings.pushNotifications !== false;
+            document.getElementById('taskReminders').checked = settings.taskReminders !== false;
+            
+            // Task management settings
+            document.getElementById('tasksPerPage').value = settings.tasksPerPage || '25';
+            document.getElementById('autoSave').checked = settings.autoSave !== false;
+            document.getElementById('showCompletedTasks').checked = settings.showCompletedTasks === true;
+            
+            // Privacy settings
+            document.getElementById('profileVisibility').checked = settings.profileVisibility !== false;
+            document.getElementById('activityTracking').checked = settings.activityTracking === true;
+            document.getElementById('sessionTimeout').value = settings.sessionTimeout || '60';
+        }
+
+        function getLocalUserSettings() {
+            const settingsStr = localStorage.getItem('userSettings');
+            return settingsStr ? JSON.parse(settingsStr) : {};
+        }
+
+        function saveUserSettings(settings) {
+            localStorage.setItem('userSettings', JSON.stringify(settings));
+        }
+
+        async function saveSettings() {
+            try {
+                // Show loading state
+                const submitBtn = document.querySelector('#settingsModal .btn-success');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+                
+                // Collect all settings
+                const settings = {
+                    // Appearance
+                    theme: document.getElementById('themeSelect').value,
+                    
+                    // Notifications
+                    emailNotifications: document.getElementById('emailNotifications').checked,
+                    pushNotifications: document.getElementById('pushNotifications').checked,
+                    taskReminders: document.getElementById('taskReminders').checked,
+                    
+                    // Task Management
+                    tasksPerPage: parseInt(document.getElementById('tasksPerPage').value),
+                    autoSave: document.getElementById('autoSave').checked,
+                    showCompletedTasks: document.getElementById('showCompletedTasks').checked,
+                    
+                    // Privacy
+                    profileVisibility: document.getElementById('profileVisibility').checked,
+                    activityTracking: document.getElementById('activityTracking').checked,
+                    sessionTimeout: document.getElementById('sessionTimeout').value,
+                    
+                    // Metadata
+                    lastUpdated: new Date().toISOString()
+                };
+                
+                // Save settings to backend
+                const response = await fetch(`${API_BASE_URL}/users/${currentUser.id}/settings`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settings)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to save settings');
+                }
+                
+                // Also save locally as cache
+                saveUserSettings(settings);
+                
+                // Apply theme immediately
+                applyTheme(settings.theme);
+                
+                showToast('Settings saved successfully!', 'success');
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
+                modal.hide();
+                
+            } catch (error) {
+                console.error('Settings save error:', error);
+                const errorDiv = document.getElementById('settingsError');
+                errorDiv.textContent = 'Failed to save settings: ' + error.message;
+                errorDiv.classList.remove('d-none');
+            } finally {
+                // Reset button state
+                const submitBtn = document.querySelector('#settingsModal .btn-success');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Save Preferences';
+            }
+        }
+
+        function applyTheme(theme) {
+            const body = document.body;
+            
+            // Remove existing theme classes
+            body.classList.remove('theme-light', 'theme-dark');
+            
+            if (theme === 'dark') {
+                body.classList.add('theme-dark');
+            } else if (theme === 'light') {
+                body.classList.add('theme-light');
+            } else if (theme === 'auto') {
+                // Use system preference
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                body.classList.add(prefersDark ? 'theme-dark' : 'theme-light');
+            }
+        }
+
+
+
+        // Apply saved theme on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const settings = getLocalUserSettings();
+            if (settings.theme) {
+                applyTheme(settings.theme);
+            }
+        });
+    </script>
+</body>
+</html>
+

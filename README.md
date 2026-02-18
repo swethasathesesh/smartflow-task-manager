@@ -1,65 +1,69 @@
-# 🚀 Task Management System with AI Integration
+# 🚀 Task Management Pro - Modern Task Management System
 
-A modern, feature-rich REST API built with FastAPI for managing users and tasks, complete with email-based authentication, OTP verification, password recovery, containerization, and AI-powered task intelligence.
+A full-stack task management application built with FastAPI, featuring JWT authentication, real-time task tracking, and comprehensive user management.
 
 ## ✨ Features
 
 ### 🔐 Authentication & Security
-- User registration with email verification
-- Time-based OTP (TOTP) generation and validation
+- User registration with email OTP verification
 - JWT token-based authentication (access + refresh tokens)
 - Secure password hashing with bcrypt
-- Forgot password with email-based token reset
-- Protected API endpoints with role-based access
+- Automatic token refresh on expiry
+- Protected API endpoints
+- Environment variable configuration
 
-### 👥 User Profile
-- Complete CRUD operations for user profiles
-- Email verification workflow
-- Profile updates and account management
-- User preferences and settings
+### 👥 User Management
+- Complete user profiles with bio
+- Profile picture upload with thumbnails
+- User settings and preferences stored in database
+- Password change functionality
+- Email and phone verification
 
 ### ✅ Task Management
 - Create, read, update, and delete tasks
-- Task categorization (Work/Personal)
-- Priority levels (High/Medium/Low)
-- Status tracking (Todo/In Progress/Completed/Archived)
-- Due date management
-- User-specific task isolation
+- Kanban board with drag-and-drop
+- Task prioritization (Low/Medium/High/Urgent)
+- Status tracking (Todo/In Progress/Completed)
+- Due date and time tracking
+- Task tags and notes
+- Task search and filtering
+- Task statistics and analytics
 
-### 🤖 AI-Powered Features
-- Automatic task categorization using AI
-- Smart priority suggestions based on task content
-- Estimated time-to-completion predictions
-- Natural language processing for task analysis
+### 📊 Dashboard & Analytics
+- Real-time task statistics
+- Completion rate tracking
+- Overdue task alerts
+- Task count by status
+- Completion tracking per day
 
-### 🐋 Containerization & Deployment
-- Docker support for consistent environments
-- Docker Compose for multi-container orchestration
-- Production-ready deployment configurations
-- Free-tier deployment options (Render/Railway/Fly.io)
+### 🎨 User Interface
+- Modern responsive design
+- Drag-and-drop task management
+- Real-time updates
+- Toast notifications
+- Mobile-friendly
+- Bootstrap 5 styling
 
 ## 🛠️ Tech Stack
 
 | Component | Technology |
 |-----------|-----------|
-| **Framework** | FastAPI 0.104+ |
+| **Framework** | FastAPI 0.119.0 |
 | **Language** | Python 3.10+ |
-| **Database** | MongoDB Atlas (Free M0 Cluster) |
-| **Authentication** | JWT + PyOTP |
-| **Email Service** | Amazon SES / Brevo |
-| **AI Integration** | OpenAI GPT-5-nano / Google Gemini Flash |
-| **Containerization** | Docker + Docker Compose |
-| **Deployment** | Render.com / Railway / Fly.io |
+| **Database** | MongoDB Atlas |
+| **Authentication** | JWT (python-jose) |
+| **Password Hashing** | bcrypt |
+| **Email Service** | aiosmtplib |
+| **Image Processing** | Pillow (PIL) |
+| **Frontend** | Bootstrap 5, Vanilla JavaScript |
 
 
 ## 📋 Prerequisites
 
 - Python 3.10 or higher
-- Docker and Docker Compose
-- MongoDB Atlas account
-- Email service credentials (Amazon SES or Brevo)
-- OpenAI or Google Gemini API key (optional, for AI features)
-- Git
+- MongoDB Atlas account (or local MongoDB)
+- Email service credentials (Gmail or SMTP)
+- pip/pip3
 
 ## 🚀 Quick Start
 
@@ -72,73 +76,55 @@ cd user-task-management
 
 ### 2. Environment Setup
 
-Create a `.env` file in the project root:
+Create a `.env` file in the project root (see `ENV_SETUP_GUIDE.md` for details):
 
-```text
-# Application Settings
-APP_NAME=User Task Management
-APIDEBUG=True
-SECRET_KEY=your-super-secret-key
-ALGORITHM=HS256
+```bash
+# MongoDB Configuration
+MONGODB_USERNAME=your_username
+MONGODB_PASSWORD=your_password
+MONGODB_CLUSTER=cluster0.mongodb.net
+DATABASE_NAME=task_manager-pro
+
+# Security & Authentication
+SECRET_KEY=your-super-secret-key-here
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 REFRESH_TOKEN_EXPIRE_DAYS=7
 
-# Database
-MONGODB_URL=mongodb+srv://username:password@cluster.mongodb.net/
-DATABASE_NAME=task_management
-
-# Email Service (Amazon SES)
-EMAIL_HOST=email-smtp.us-east-1.amazonaws.com
-EMAIL_PORT=587
-EMAIL_USERNAME=your-ses-smtp-username
-EMAIL_PASSWORD=your-ses-smtp-password
-EMAIL_FROM=noreply@yourdomain.com
+# Email Configuration (Gmail example)
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+EMAIL_ADDRESS=your-email@gmail.com
+EMAIL_PASSWORD=your-app-password
 
 # OTP Settings
-OTP_EXPIRE_MINUTES=10
 OTP_LENGTH=6
+OTP_EXPIRY_MINUTES=10
+MAX_OTP_ATTEMPTS=3
 
-# AI Integration
-# OPENAI_API_KEY=sk-your-openai-api-key 
-# GOOGLE_API_KEY=your-google-gemini-api-key
-# AI_PROVIDER=openai  #switch to openai or gemini
-
-# Deployment
-PORT=8000
-HOST=0.0.0.0
+# Development Mode (set to False for production)
+DEVELOPMENT_MODE=True
 ```
 
-### 3. Local Development
+### 3. Install Dependencies
 
-Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
-Run the application
-```bash
-uvicorn app.main:app –reload
-```
 
-### 4. Docker Development
+### 4. Run the Application
 
-Build and run with Docker Compose
 ```bash
-docker-compose up –build
-```
-Run in detached mode
-```bash
-docker-compose up -d
-```
-Stop containers
-```bash
-docker-compose down
+python main.py
+# or
+uvicorn main:app --reload
 ```
 
 ### 5. Access the Application
 
-- **API Documentation (Swagger UI):** http://localhost:8000/docs
-- **Alternative Documentation (ReDoc):** http://localhost:8000/redoc
+- **Frontend:** http://localhost:8000
+- **API Documentation:** http://localhost:8000/docs
 - **Health Check:** http://localhost:8000/health
+- **Database Check:** http://localhost:8000/health/db
 
 ## 📁 Project Structure
 ```text
