@@ -16,26 +16,26 @@ const closeButtons = document.querySelectorAll('.close');
 
 // Open Login Modal
 function openLoginModal() {
-    loginModal.style.display = 'block';
-    signupModal.style.display = 'none';
+    if (loginModal) loginModal.style.display = 'block';
+    if (signupModal) signupModal.style.display = 'none';
 }
 
 // Open Signup Modal
 function openSignupModal() {
-    signupModal.style.display = 'block';
-    loginModal.style.display = 'none';
+    if (signupModal) signupModal.style.display = 'block';
+    if (loginModal) loginModal.style.display = 'none';
 }
 
 // Close modals
 function closeAllModals() {
-    loginModal.style.display = 'none';
-    signupModal.style.display = 'none';
+    if (loginModal) loginModal.style.display = 'none';
+    if (signupModal) signupModal.style.display = 'none';
 }
 
-// Event listeners for opening modals
-navLoginBtn.addEventListener('click', openLoginModal);
-navSignupBtn.addEventListener('click', openSignupModal);
-getStartedBtn.addEventListener('click', openSignupModal);
+// Event listeners for opening modals (Polite versions!)
+if (navLoginBtn) navLoginBtn.addEventListener('click', openLoginModal);
+if (navSignupBtn) navSignupBtn.addEventListener('click', openSignupModal);
+if (getStartedBtn) getStartedBtn.addEventListener('click', openSignupModal);
 
 // Event listeners for close buttons
 closeButtons.forEach(btn => {
@@ -43,15 +43,19 @@ closeButtons.forEach(btn => {
 });
 
 // Toggle between login and signup
-toggleSignupLink.addEventListener('click', (e) => {
-    e.preventDefault();
-    openSignupModal();
-});
+if (toggleSignupLink) {
+    toggleSignupLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        openSignupModal();
+    });
+}
 
-toggleLoginLink.addEventListener('click', (e) => {
-    e.preventDefault();
-    openLoginModal();
-});
+if (toggleLoginLink) {
+    toggleLoginLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        openLoginModal();
+    });
+}
 
 // Close modal when clicking outside
 window.addEventListener('click', (e) => {
@@ -63,59 +67,81 @@ window.addEventListener('click', (e) => {
     }
 });
 
-// Handle Login Form Submission
-loginForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const email = loginForm.querySelector('input[type="text"]').value;
-    const password = loginForm.querySelector('input[type="password"]').value;
-    
-    if (email && password) {
-        console.log('Login attempt:', { email, password });
-        alert('Login successful! (Demo mode)');
-        closeAllModals();
-        loginForm.reset();
-    }
-});
-
-// Handle Signup Form Submission
-signupForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const fullName = signupForm.querySelectorAll('input')[0].value;
-    const email = signupForm.querySelectorAll('input')[1].value;
-    const password1 = signupForm.querySelectorAll('input')[2].value;
-    const password2 = signupForm.querySelectorAll('input')[3].value;
-    
-    if (password1 !== password2) {
-        alert('Passwords do not match!');
-        return;
-    }
-    
-    if (fullName && email && password1) {
-        console.log('Signup attempt:', { fullName, email });
-        alert('Account created successfully! (Demo mode)');
-        closeAllModals();
-        signupForm.reset();
-    }
-});
-
-// Learn More Button (Placeholder)
-learnMoreBtn.addEventListener('click', () => {
-    alert('Explore our features section to learn more about SmartFlow!');
-});
-
-// Smooth scroll for navigation links
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
-        const href = this.getAttribute('href');
-        if (href !== '#') {
-            e.preventDefault();
-            const element = document.querySelector(href);
-            if (element) {
-                element.scrollIntoView({ behavior: 'smooth' });
-            }
+// Handle Login Form Submission (Demo)
+if (loginForm) {
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const emailInput = loginForm.querySelector('input[type="text"]') || loginForm.querySelector('input[type="email"]');
+        const passwordInput = loginForm.querySelector('input[type="password"]');
+        
+        const email = emailInput ? emailInput.value : '';
+        const password = passwordInput ? passwordInput.value : '';
+        
+        if (email && password) {
+            console.log('Login attempt:', { email, password });
+            alert('Login successful! (Demo mode)');
+            closeAllModals();
+            loginForm.reset();
         }
     });
-});
+}
+
+// --- REAL BACKEND CONNECTION FOR SIGN UP ---
+if (signupForm) {
+    signupForm.addEventListener('submit', async (e) => {
+        // 1. Stop page reload
+        e.preventDefault();
+
+        // 2. Grab the text from the inputs using their IDs
+        const nameValue = document.getElementById("fullName").value;
+        const emailValue = document.getElementById("signupEmail").value;
+        const passwordValue = document.getElementById("signupPassword").value;
+        const confirmPasswordValue = document.getElementById("confirmPassword").value;
+        
+        // 3. Password match check
+        if (passwordValue !== confirmPasswordValue) {
+            alert('Passwords do not match. Please try again.');
+            return;
+        }
+        
+        // 4. Package for Python
+        const userData = {
+            full_name: nameValue,
+            email: emailValue,
+            password: passwordValue
+        };
+
+        try {
+            // 5. Send to our specific FastAPI backend route
+            const response = await fetch("http://127.0.0.1:8000/signup", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(userData)
+            });
+
+            if (response.ok) {
+                alert("✅ Account created successfully! You can now log in.");
+                signupForm.reset(); 
+                if (toggleLoginLink) toggleLoginLink.click(); // Flips back to login screen
+            } else {
+                const errorData = await response.json();
+                alert("❌ Sign Up Failed: " + JSON.stringify(errorData.detail));
+            }
+        } catch (error) {
+            console.error("Connection error:", error);
+            alert("Server is offline or unreachable.");
+        }
+    });
+}
+
+// Learn More Button (Placeholder)
+if (learnMoreBtn) {
+    learnMoreBtn.addEventListener('click', () => {
+        alert('Explore our features section to learn more about SmartFlow!');
+    });
+}
 
 // Add ripple effect to buttons
 function addRippleEffect(element) {

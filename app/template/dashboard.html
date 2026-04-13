@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - SmartFlow</title>
+    <style>
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; display: flex; height: 100vh; }
+        .sidebar { width: 250px; background-color: #2c3e50; color: white; padding: 20px; display: flex; flex-direction: column; }
+        .sidebar h2 { margin-top: 0; color: #18bc9c; font-size: 24px; }
+        .nav-links a { display: block; color: #ecf0f1; text-decoration: none; padding: 12px; margin-bottom: 8px; border-radius: 5px; transition: 0.3s; }
+        .nav-links a:hover { background-color: #34495e; }
+        .main-content { flex: 1; padding: 40px; overflow-y: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .header h1 { margin: 0; color: #2c3e50; }
+        .logout-btn { background-color: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        
+        .task-card { background: white; padding: 15px 20px; border-radius: 8px; border-left: 5px solid #18bc9c; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;}
+        .task-title { margin: 0; font-size: 18px; color: #2c3e50; }
+        .task-desc { margin: 5px 0 0 0; font-size: 14px; color: #7f8c8d; }
+        .task-status { background: #f39c12; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>SmartFlow</h2>
+        <div class="nav-links">
+            <a href="#" style="background-color: #18bc9c;">📊 My Dashboard</a>
+            <a href="#">📝 Active Tasks</a>
+            <a href="#">✅ Completed</a>
+            <a href="#">⚙️ Settings</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>Welcome, {{ user_name }}!</h1>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+
+        <div style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+            <h3 style="margin-top: 0; color: #2c3e50;">Create a New Task</h3>
+            <form id="createTaskForm" style="display: flex; gap: 10px;">
+                <input type="text" id="taskTitle" placeholder="What needs to be done?" required style="flex: 1; padding: 10px; border: 1px solid #bdc3c7; border-radius: 5px;">
+                <input type="text" id="taskDesc" placeholder="Brief description (optional)" style="flex: 2; padding: 10px; border: 1px solid #bdc3c7; border-radius: 5px;">
+                <button type="submit" style="background-color: #18bc9c; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold;">Add Task</button>
+            </form>
+        </div>
+
+        <div id="taskList" style="min-height: 200px;">
+            <p style="text-align: center; color: #7f8c8d; margin-top: 50px;">Loading your tasks...</p>
+        </div>
+    </div>
+
+    <script>
+        function logout() {
+            window.location.href = "/logout"; 
+        }
+
+        async function loadTasks() {
+            const taskList = document.getElementById('taskList');
+            try {
+                const response = await fetch("http://127.0.0.1:8000/api/tasks");
+                if (response.ok) {
+                    const tasks = await response.json();
+                    taskList.innerHTML = "";
+
+                    if (tasks.length === 0) {
+                        taskList.innerHTML = '<p style="text-align: center; color: #7f8c8d; margin-top: 50px;">No tasks yet. Create one above!</p>';
+                        return;
+                    }
+
+                    tasks.forEach(task => {
+                        const taskCard = document.createElement('div');
+                        taskCard.className = 'task-card';
+                        taskCard.innerHTML = `
+                            <div>
+                                <h4 class="task-title">${task.title}</h4>
+                                <p class="task-desc">${task.description || "No description provided."}</p>
+                            </div>
+                            <div>
+                                <span class="task-status">${task.status.toUpperCase()}</span>
+                            </div>
+                        `;
+                        taskList.appendChild(taskCard);
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to load tasks:", error);
+                taskList.innerHTML = '<p style="text-align: center; color: #e74c3c;">Failed to load tasks. Server might be down.</p>';
+            }
+        }
+
+        const createTaskForm = document.getElementById('createTaskForm');
+        if (createTaskForm) {
+            createTaskForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const title = document.getElementById('taskTitle').value;
+                const desc = document.getElementById('taskDesc').value;
+
+                try {
+                    const response = await fetch("http://127.0.0.1:8000/api/tasks", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ title: title, description: desc })
+                    });
+
+                    if (response.ok) {
+                        createTaskForm.reset();
+                        loadTasks(); // Refreshes the list instantly!
+                    } else {
+                        alert("❌ Failed to create task.");
+                    }
+                } catch (error) {
+                    console.error("Error:", error);
+                }
+            });
+        }
+
+        window.onload = loadTasks;
+    </script>
+</body>
+</html>

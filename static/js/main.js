@@ -1380,3 +1380,56 @@ async function deleteAttachment(attachmentId) {
     }
 }
 
+// --- SMARTFLOW NEW USER SIGN UP LOGIC ---
+document.addEventListener('DOMContentLoaded', function() {
+    const signupForm = document.getElementById("signupForm");
+    
+    if (signupForm) {
+        signupForm.addEventListener("submit", async function(event) {
+            // 1. Stop page reload
+            event.preventDefault();
+
+            // 2. Grab the text
+            const nameValue = document.getElementById("fullName").value;
+            const emailValue = document.getElementById("signupEmail").value;
+            const passwordValue = document.getElementById("signupPassword").value;
+            const confirmPasswordValue = document.getElementById("confirmPassword").value;
+
+            // 3. Password match check
+            if (passwordValue !== confirmPasswordValue) {
+                showToast("Passwords do not match. Please try again.", "warning");
+                return;
+            }
+
+            // 4. Package for Python
+            const userData = {
+                full_name: nameValue,
+                email: emailValue,
+                password: passwordValue
+            };
+
+            try {
+                // 5. Send to our specific FastAPI backend route
+                const response = await fetch("http://127.0.0.1:8000/signup", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(userData)
+                });
+
+                if (response.ok) {
+                    showToast("Account created successfully! You can now log in.", "success");
+                    signupForm.reset(); 
+                    document.getElementById("toggleLogin").click(); // Flips back to login screen
+                } else {
+                    const errorData = await response.json();
+                    showToast("Sign Up Failed: " + JSON.stringify(errorData.detail), "danger");
+                }
+            } catch (error) {
+                console.error("Connection error:", error);
+                showToast("Server is offline or unreachable.", "danger");
+            }
+        });
+    }
+});
