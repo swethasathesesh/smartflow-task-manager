@@ -14,16 +14,19 @@
         .main-content { flex: 1; padding: 40px; overflow-y: auto; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         .logout-btn { background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
-        .task-card { background: white; padding: 15px 20px; border-radius: 8px; border-left: 5px solid #18bc9c; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;}
+        .task-card { background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;}
         .task-title { margin: 0; font-size: 18px; }
-        .task-date { font-size: 13px; color: #e67e22; font-weight: bold; }
+        .task-date { font-size: 13px; color: #e67e22; font-weight: bold; margin-top: 5px; }
         .task-status { padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; color: white; }
         .action-btn { border: none; padding: 6px 10px; border-radius: 5px; cursor: pointer; margin-left: 5px;}
         .btn-complete { background: #2ecc71; color: white; }
         .btn-delete { background: #e74c3c; color: white; }
         .timer-container { display: flex; align-items: center; background: #ecf0f1; padding: 5px 10px; border-radius: 20px; margin-right: 10px;}
         .btn-play { background: #3498db; color: white; border-radius: 50%; width: 30px; height: 30px; padding: 0; display: flex; align-items: center; justify-content: center;}
-        #analysisSection { display: none; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        #analysisSection { display: none; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .summary-box { background: #18bc9c; color: white; padding: 20px; border-radius: 10px; margin-bottom: 30px; text-align: center; }
+        .summary-box h4 { margin: 0; opacity: 0.9; }
+        .summary-box h2 { margin: 5px 0 0 0; font-size: 32px; }
     </style>
 </head>
 <body>
@@ -49,7 +52,12 @@
                 <form id="createTaskForm" style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <input type="text" id="taskTitle" placeholder="Task title" required style="flex: 2; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
                     <input type="text" id="taskDesc" placeholder="Description" style="flex: 3; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
-                    <input type="datetime-local" id="taskDueDate" style="flex: 1; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+                    <input type="datetime-local" id="taskDueDate" style="flex: 1.5; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+                    <select id="taskPriority" style="flex: 1; padding: 10px; border-radius: 5px; border: 1px solid #ddd; background: white;">
+                        <option value="Low">Low</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="High">High</option>
+                    </select>
                     <button type="submit" style="background: #18bc9c; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold;">Add Task</button>
                 </form>
             </div>
@@ -59,6 +67,10 @@
         </div>
 
         <div id="analysisSection">
+            <div class="summary-box">
+                <h4>Total Focus Time Today</h4>
+                <h2 id="totalTimeToday">00:00:00</h2>
+            </div>
             <h3>📈 Tasks Completed (Last 7 Days)</h3>
             <canvas id="analysisChart" width="400" height="150"></canvas>
         </div>
@@ -66,23 +78,23 @@
 
     <script>
         let currentFilter = 'all';
-        let activeIntervals = {}; // These are now "Global"
+        let activeIntervals = {};
         let currentTimes = {};
         let myChart = null;
 
         function logout() { window.location.href = "/logout"; }
 
         function formatTime(s) {
-            const m = Math.floor(s / 60).toString().padStart(2, '0');
-            const sec = (s % 60).toString().padStart(2, '0');
-            return `${m}:${sec}`;
+            const hrs = Math.floor(s / 3600).toString().padStart(2, '0');
+            const mins = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
+            const secs = (s % 60).toString().padStart(2, '0');
+            return `${hrs}:${mins}:${secs}`;
         }
 
         function setView(filter, element) {
             currentFilter = filter;
             document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
             element.classList.add('active');
-
             if (filter === 'analysis') {
                 document.getElementById('taskEntryArea').style.display = 'none';
                 document.getElementById('analysisSection').style.display = 'block';
@@ -105,23 +117,21 @@
                         if (currentFilter === 'completed') return t.status === 'completed';
                         return true;
                     });
-
                     taskList.innerHTML = tasks.length === 0 ? '<p style="text-align:center;margin-top:50px">No tasks found here!</p>' : "";
-
                     tasks.forEach(task => {
-                        // Only update memory if the timer ISN'T already running in the background
-                        if (!activeIntervals[task._id]) {
-                            currentTimes[task._id] = task.time_spent || 0;
-                        }
-
+                        if (!activeIntervals[task._id]) currentTimes[task._id] = task.time_spent || 0;
                         const taskCard = document.createElement('div');
                         taskCard.className = 'task-card';
-                        if (task.status === 'completed') { taskCard.style.borderLeftColor = '#2ecc71'; taskCard.style.opacity = '0.7'; }
                         
+                        // NEW: Priority Colors
+                        let borderColor = '#f1c40f'; // Medium
+                        if (task.priority === 'High') borderColor = '#e74c3c';
+                        if (task.priority === 'Low') borderColor = '#3498db';
+                        taskCard.style.borderLeft = `6px solid ${borderColor}`;
+                        
+                        if (task.status === 'completed') taskCard.style.opacity = '0.7';
                         const badgeColor = task.status === 'completed' ? '#2ecc71' : '#f39c12';
                         const dateHTML = task.due_date ? `<p class="task-date">🗓️ Due: ${new Date(task.due_date).toLocaleString()}</p>` : '';
-                        
-                        // Persistent UI check: if it's running, show pause button immediately
                         const isRunning = !!activeIntervals[task._id];
                         const timerHTML = task.status !== 'completed' ? `
                             <div class="timer-container">
@@ -130,12 +140,12 @@
                                     style="background-color: ${isRunning ? '#e67e22' : '#3498db'}"
                                     onclick="toggleTimer('${task._id}')">${isRunning ? '⏸️' : '▶️'}</button>
                             </div>
-                        ` : `<div class="timer-container"><span class="timer-text">⏱️ ${formatTime(currentTimes[task._id])} total</span></div>`;
+                        ` : `<div class="timer-container"><span class="timer-text">⏱️ ${formatTime(currentTimes[task._id])}</span></div>`;
 
                         taskCard.innerHTML = `
                             <div>
-                                <h4 class="task-title" style="text-decoration: ${task.status === 'completed' ? 'line-through' : 'none'};">${task.title}</h4>
-                                <p class="task-desc">${task.description || "No description."}</p>
+                                <h4 class="task-title" style="text-decoration: ${task.status === 'completed' ? 'line-through' : 'none'};">${task.title} <small style="color:${borderColor}">(${task.priority})</small></h4>
+                                <p class="task-desc" style="margin-top:5px; color:#7f8c8d;">${task.description || "No description."}</p>
                                 ${dateHTML}
                             </div>
                             <div style="display: flex; align-items: center; gap: 5px;">
@@ -155,12 +165,10 @@
         async function toggleTimer(taskId) {
             const btn = document.getElementById(`btn-timer-${taskId}`);
             const display = document.getElementById(`timer-display-${taskId}`);
-
             if (activeIntervals[taskId]) {
                 clearInterval(activeIntervals[taskId]);
                 delete activeIntervals[taskId];
                 if(btn) { btn.innerHTML = "▶️"; btn.style.backgroundColor = "#3498db"; }
-                
                 await fetch(`http://127.0.0.1:8000/api/tasks/${taskId}/time`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
@@ -179,10 +187,14 @@
         async function loadAnalysis() {
             try {
                 const response = await fetch("http://127.0.0.1:8000/api/analysis");
-                const data = await response.json();
-                const labels = Object.keys(data).sort(); // Sort dates correctly
-                const values = labels.map(key => data[key]);
+                const result = await response.json();
+                const data = result.chart_data;
+                
+                // Update Total Time Today
+                document.getElementById('totalTimeToday').innerText = formatTime(result.total_seconds_today);
 
+                const labels = Object.keys(data).sort();
+                const values = labels.map(key => data[key]);
                 if (myChart) myChart.destroy();
                 const ctx = document.getElementById('analysisChart').getContext('2d');
                 myChart = new Chart(ctx, {
@@ -198,7 +210,7 @@
                     },
                     options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
                 });
-            } catch(e) { console.error("Analysis failed:", e); }
+            } catch(e) { console.error(e); }
         }
 
         async function completeTask(taskId) {
@@ -220,7 +232,8 @@
             const body = {
                 title: document.getElementById('taskTitle').value,
                 description: document.getElementById('taskDesc').value,
-                due_date: document.getElementById('taskDueDate').value
+                due_date: document.getElementById('taskDueDate').value,
+                priority: document.getElementById('taskPriority').value
             };
             const res = await fetch("http://127.0.0.1:8000/api/tasks", {
                 method: "POST",

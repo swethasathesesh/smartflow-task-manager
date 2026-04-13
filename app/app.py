@@ -5,7 +5,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from bson import ObjectId
 from typing import Optional
-from datetime import datetime, timedelta # <-- NEW: For analysis logic
+from datetime import datetime, timedelta
 
 from app.database import users_collection, tasks_collection, ping_server
 from app.utils import hash_password, verify_password, create_access_token, verify_token
@@ -19,6 +19,7 @@ class TaskCreate(BaseModel):
     title: str
     description: str = ""
     due_date: Optional[str] = None
+    priority: str = "Medium" # <-- NEW: Storing priority
 
 class TimeUpdate(BaseModel):
     time_spent: int
@@ -75,9 +76,10 @@ async def create_task(task: TaskCreate, request: Request):
         "title": task.title,
         "description": task.description,
         "due_date": task.due_date,
+        "priority": task.priority, # <-- Saving priority
         "time_spent": 0,
         "status": "pending",
-        "created_at": datetime.utcnow() # <-- Added for Analysis
+        "created_at": datetime.utcnow()
     }
     await tasks_collection.insert_one(new_task)
     return {"message": "Created"}
@@ -106,15 +108,16 @@ async def update_task_time(task_id: str, data: TimeUpdate):
     await tasks_collection.update_one({"_id": ObjectId(task_id)}, {"$set": {"time_spent": data.time_spent}})
     return {"message": "Saved"}
 
-# --- NEW: ROUTE FOR DAILY ANALYSIS ---
 @app.get("/api/analysis")
 async def get_analysis(request: Request):
     token = request.cookies.get("access_token")
     payload = verify_token(token)
     if not payload: raise HTTPException(status_code=401)
     
-    # Calculate tasks completed in the last 7 days
     last_7_days = {}
+    total_seconds_today = 0
+    today_str = datetime.utcnow().strftime("%Y-%m-%d")
+
     for i in range(7):
         date = (datetime.utcnow() - timedelta(days=i)).strftime("%Y-%m-%d")
         last_7_days[date] = 0
@@ -128,5 +131,6 @@ async def get_analysis(request: Request):
     for t in tasks:
         d = t["completed_at"].strftime("%Y-%m-%d")
         if d in last_7_days: last_7_days[d] += 1
+        if d == today_str: total_seconds_today += t.get("time_spent", 0)
             
-    return last_7_days
+    return {"chart_data": last_7_days, "total_seconds_today": total_seconds_today}
